@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1784668098748,
+      "tag": "0000_panoramic_iron_fist",
+      "breakpoints": true
+    }
+  ]
+}
