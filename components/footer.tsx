@@ -44,7 +44,7 @@ export function Footer() {
             © {new Date().getFullYear()} Areia no Mar. Todos los derechos reservados.
           </p>
           <p className="text-sm text-muted-foreground">
-            Hecho con amor por la comunidad · CI test
+            Hecho con amor por la comunidad
           </p>
         </div>
       </div>
