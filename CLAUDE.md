@@ -27,13 +27,13 @@ El proyecto **se migró de Supabase (Postgres + Auth + Storage) a MySQL + almace
 - ✅ **Desplegado y funcionando en producción** (gaiacapoeira.com) — subida manual por zip vía el asistente "Deploy Web App" de hPanel. Ver sección "Despliegue en Hostinger" más abajo para el proceso exacto y un gotcha real que salió con la contraseña de MySQL.
 
 - ✅ `@vercel/analytics` eliminado (código, `package.json`, lockfile) — ya no tira el warning de `/_vercel/insights/script.js` en consola.
+- ✅ **Repo de git nuevo creado** en GitHub: [github.com/Swithsere094/gaiacapoeira](https://github.com/Swithsere094/gaiacapoeira), rama `main`, primer commit ya pusheado (165 archivos, sin nada sensible — `.env.local`, el dump de datos y `node_modules` quedaron fuera correctamente por `.gitignore`). Este repo es independiente del repo original enlazado a v0.app/Vercel — no lo toca.
 
-Lo que **falta**:
+Lo que **falta ahora mismo — SIGUIENTE TAREA A TRABAJAR**:
 
-- ❌ **Crear el repo de git nuevo** para este proyecto (`git init` + primer commit + push a un repo de GitHub que crea el usuario) — ver "CI/CD" más abajo, es el siguiente paso grande.
-- ❌ 2 documentos de `politica` migrados con `file_url` apuntando todavía a Supabase Storage (archivos no migrados, solo el link) — bajarlos y resubirlos a `public/uploads/politica/` cuando se dé de baja Supabase.
-- ❌ Construir el backend (rutas API) de los módulos que ya tienen tablas pero no tienen código: ver "Tablas sin usar todavía" más abajo.
-- ❌ CI/CD para auto-deploy en push a main — ver sección dedicada más abajo.
+- ❌ **CI/CD para auto-deploy en push a `main`** — ver sección dedicada "CI/CD" más abajo, tiene el plan completo y los datos concretos del servidor que hacen falta para armarlo (ruta del deploy en Hostinger, credenciales ya puestas, etc.). Este es el trabajo que sigue.
+- ❌ 2 documentos de `politica` migrados con `file_url` apuntando todavía a Supabase Storage (archivos no migrados, solo el link) — bajarlos y resubirlos a `public/uploads/politica/` cuando se dé de baja Supabase. Menor, no urgente.
+- ❌ Construir el backend (rutas API) de los módulos que ya tienen tablas pero no tienen código: ver "Tablas sin usar todavía" más abajo. No pedido todavía, solo queda documentado por si se retoma.
 
 Si ves código que hace referencia a Supabase en algún sitio no mencionado aquí, probablemente sea una regresión — no debería quedar nada (`@supabase/*` ya no está ni en `package.json`).
 
@@ -179,10 +179,16 @@ Todavía no existe. Decisión tomada durante el primer despliegue: automatizar r
 1. **Git integration nativa de hPanel** (Advanced/Websites → Git): Hostinger puede conectar un repo de GitHub y hacer pull automático vía webhook al hacer push. Más simple, cero config de CI externa — **probar esta primero**, revisar si el plan la soporta.
 2. **GitHub Actions + SSH**: un workflow que en cada push a `main` entra por SSH (hay acceso confirmado) y corre `git pull && pnpm install && pnpm db:migrate && pnpm build` + reinicia la Node.js App. Más control/logs, pero hay que guardar la llave SSH como secret en GitHub.
 
+**Datos concretos del servidor** (sacados de los logs de error durante el primer despliegue):
+- Ruta de la app en el servidor: `/home/u762014524/domains/gaiacapoeira.com/nodejs/`
+- Usuario de hosting: `u762014524`
+- Repo de GitHub: `https://github.com/Swithsere094/gaiacapoeira.git`, rama `main`
+
 Cosas a decidir cuando se arme esto:
 - ¿El deploy corre `pnpm db:migrate` automáticamente, o eso se sigue haciendo a mano por ahora? (Recomendado: automatizarlo también, es idempotente — ver sección de migraciones arriba.)
 - `public/uploads/` no debe borrarse en cada deploy — confirmar que el método elegido no haga un checkout limpio que se lleve por delante esa carpeta.
-- Variables de entorno de producción ya están puestas a mano en el Node.js App de hPanel — un redeploy vía git no debería tocarlas, pero confirmarlo la primera vez.
+- Variables de entorno de producción ya están puestas a mano en el Node.js App de hPanel (9 variables — ver `.env.example`) — un redeploy vía git no debería tocarlas, pero confirmarlo la primera vez.
+- **Gotcha ya conocido**: si en algún momento hay que volver a tocar `DB_PASSWORD` u otra variable con caracteres especiales en el panel de Hostinger, usar solo alfanumérico (ver el gotcha de "Access denied" documentado arriba, en la sección de despliegue) — no confirmado si el problema era el campo de variables de entorno específicamente o algo más amplio del panel.
 
 ## Otras notas sueltas
 
