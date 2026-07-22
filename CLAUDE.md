@@ -2,14 +2,6 @@
 
 Contexto para trabajar en este repo. Léelo antes de tocar auth, base de datos o despliegue — hay decisiones no obvias que no se ven solo mirando el código.
 
-## Dónde vive el código ahora
-
-Este directorio (originalmente una copia de `c:\xampp\htdocs\PROYECTOS\PERSONALES\v0-repositorio-de-capoeira`, hecha para armar el `.zip` del primer despliegue a Hostinger) **es ahora el proyecto activo**. Se va a convertir en un repo de git nuevo (todavía no se hizo `git init`), separado del repo original que estaba enlazado a v0.app/Vercel.
-
-La carpeta vieja en `c:\xampp\htdocs\...` queda congelada como referencia histórica — no se vuelve a tocar. Si algo de este documento menciona esa ruta en ejemplos viejos, ya no aplica; usa la ruta de este proyecto.
-
-MySQL local sigue siendo el mismo XAMPP de siempre (no cambió, solo cambió dónde vive el código de la app) — `.env.local` de este proyecto ya apunta a esa misma base `capoeira` local.
-
 ## Qué es esto
 
 Sitio web para un grupo/comunidad de capoeira: rodas (videos de eventos), cantorias (videos de canto), catálogo de canciones, documentos de política interna, gestión de usuarios/miembros. Generado originalmente con **v0.app** y pensado para Vercel + Supabase.
@@ -24,14 +16,14 @@ El proyecto **se migró de Supabase (Postgres + Auth + Storage) a MySQL + almace
 - ✅ Sistema de migraciones versionadas con drizzle-kit configurado y funcionando.
 - ✅ Migración de **datos reales**: export CSV desde Supabase (Table Editor → Export) + `migration/migrate-csv.ts` → MySQL local (17 usuarios, 7 cantorias, 2 política, 60 rodas, 16 songs), luego volcado a `migration/production-dump.sql` e importado en la base de producción de Hostinger vía phpMyAdmin.
 - ✅ Cron automático de sync con YouTube **descartado a propósito** (decisión del creador del proyecto) — ver sección "Decisión: se descartó el cron automático" más abajo. La sincronización sigue existiendo, pero solo manual.
-- ✅ **Desplegado y funcionando en producción** (gaiacapoeira.com) — subida manual por zip vía el asistente "Deploy Web App" de hPanel. Ver sección "Despliegue en Hostinger" más abajo para el proceso exacto y un gotcha real que salió con la contraseña de MySQL.
+- ✅ **Desplegado y funcionando en producción** (gaiacapoeira.com). El primer despliegue fue manual por zip vía el asistente "Deploy Web App" de hPanel; luego se migró a auto-deploy con Git nativo (ver sección "CI/CD y despliegue en Hostinger" más abajo).
 
 - ✅ `@vercel/analytics` eliminado (código, `package.json`, lockfile) — ya no tira el warning de `/_vercel/insights/script.js` en consola.
-- ✅ **Repo de git nuevo creado** en GitHub: [github.com/Swithsere094/gaiacapoeira](https://github.com/Swithsere094/gaiacapoeira), rama `main`, primer commit ya pusheado (165 archivos, sin nada sensible — `.env.local`, el dump de datos y `node_modules` quedaron fuera correctamente por `.gitignore`). Este repo es independiente del repo original enlazado a v0.app/Vercel — no lo toca.
+- ✅ **Repo de git nuevo creado** en GitHub: [github.com/Swithsere094/gaiacapoeira](https://github.com/Swithsere094/gaiacapoeira), rama `main`. Este repo es independiente del repo original enlazado a v0.app/Vercel — no lo toca.
+- ✅ **CI/CD: push a `main` despliega solo en gaiacapoeira.com.** Ver sección "CI/CD y despliegue" más abajo — tiene la arquitectura final y varios gotchas reales que costaron bastante encontrar (puerto, CDN, invocación de pnpm anidada).
 
-Lo que **falta ahora mismo — SIGUIENTE TAREA A TRABAJAR**:
+Lo que queda pendiente, sin urgencia:
 
-- ❌ **CI/CD para auto-deploy en push a `main`** — ver sección dedicada "CI/CD" más abajo, tiene el plan completo y los datos concretos del servidor que hacen falta para armarlo (ruta del deploy en Hostinger, credenciales ya puestas, etc.). Este es el trabajo que sigue.
 - ❌ 2 documentos de `politica` migrados con `file_url` apuntando todavía a Supabase Storage (archivos no migrados, solo el link) — bajarlos y resubirlos a `public/uploads/politica/` cuando se dé de baja Supabase. Menor, no urgente.
 - ❌ Construir el backend (rutas API) de los módulos que ya tienen tablas pero no tienen código: ver "Tablas sin usar todavía" más abajo. No pedido todavía, solo queda documentado por si se retoma.
 
@@ -111,14 +103,14 @@ return NextResponse.json(data, { status: 201 })
 - Tabla `usuarios` (no `profiles`, no Supabase Auth). Roles: `admin` | `member`.
 - Sesión con `iron-session`, cookie `gaia-session`, definida en `lib/auth/session.ts`.
 - Todas las operaciones de usuario están en `lib/auth/db.ts` (login, crear, editar, borrar, reset de contraseña).
-- `proxy.ts` (en la raíz) es el middleware de Next — exige la cookie de sesión en **todas** las rutas excepto `/auth/login`, `/auth/olvide-contrasena`, `/api/auth/login`, `/api/auth/olvide-contrasena`. Si una ruta nueva necesita ser pública, hay que agregarla a `PUBLIC_PATHS` ahí.
+- `proxy.ts` (en la raíz, convención actual de Next.js 16 — ver gotcha en "CI/CD y despliegue" sobre por qué no se llama `middleware.ts`) exige la cookie de sesión en **todas** las rutas excepto `/auth/login`, `/auth/olvide-contrasena`, `/api/auth/login`, `/api/auth/olvide-contrasena`. Si una ruta nueva necesita ser pública, hay que agregarla a `PUBLIC_PATHS` ahí. Todas las respuestas que pasan por acá llevan `Cache-Control: private, no-store` (necesario por el CDN de Hostinger, ver el mismo gotcha).
 
 ## Storage de archivos
 
 - `lib/storage.ts`: `saveFile()` / `deleteFile()` / `urlToRelativePath()`. Guarda en `public/uploads/<carpeta>/` y sirve como estático de Next en `/uploads/<carpeta>/<archivo>`.
 - Único uso real hoy: subida de documentos de política (`app/api/politica/upload/route.ts`, admin only, máx 20 MB).
 - `public/uploads/` está en `.gitignore` (son archivos de usuario, no código).
-- **Importante para el despliegue**: si el flujo de deploy en Hostinger hace un `git checkout`/clone limpio en cada release, hay que asegurarse de que `public/uploads/` no se borre entre despliegues (los archivos subidos deben persistir fuera del árbol versionado).
+- Confirmado que `public/uploads/` sobrevive a los auto-deploys (ver "CI/CD y despliegue" más abajo) — al estar en `.gitignore`, el pipeline de Git de Hostinger nunca la toca.
 - El componente `components/video-upload.tsx` que subía directo a Supabase Storage desde el browser **se eliminó** (no se usaba en ninguna página). Si se retoma esa función, tiene que subir el archivo a una ruta API del servidor (como hace `politica/upload`), no llamar a un storage client desde el cliente — ya no hay uno.
 
 ## Desarrollo local
@@ -148,18 +140,47 @@ Para tener un usuario con el que entrar: `npx tsx migration/seed-admin.ts admin 
 3. Conectar la página de frontend correspondiente (si ya existe como mock, como `app/movimientos/page.tsx`) reemplazando el array hardcodeado por un `fetch` a la API nueva.
 4. Si la tabla necesita una columna nueva que no se prevé todavía, es el flujo normal de migraciones (`pnpm db:generate` + `pnpm db:migrate`).
 
-## Despliegue en Hostinger (✅ ya hecho — gaiacapoeira.com)
+## CI/CD y despliegue en Hostinger (✅ ya hecho — gaiacapoeira.com)
 
-Proceso real que se usó (no vía git, subida manual de zip):
+**Push a `main` despliega solo.** La Node.js App de hPanel está conectada directo al repo de GitHub (`https://github.com/Swithsere094/gaiacapoeira`, rama `main`) con auto-deploy nativo — no hay workflow de GitHub Actions haciendo el deploy en sí.
 
-1. hPanel → MySQL Databases → crear base + usuario (queda prefijado con el usuario de hosting, ej. `u762014524_gaiacapoeira`).
-2. Importar `migration/production-dump.sql` en esa base por **phpMyAdmin** (pestaña Import). Ojo: el dump NO debe traer `CREATE DATABASE`/`USE` — se le quitaron esas líneas a propósito porque el usuario de hosting compartido no tiene permiso de crear bases, solo de escribir en la que ya existe.
-3. Armar un `.zip` del proyecto **sin**: `node_modules/`, `.next/`, `.git/`, `.env.local`, `migration/csv-export/`, `migration/production-dump.sql`.
-4. hPanel → Websites → Add Website → **Deploy Web App → Upload your website files** → subir el zip. Hostinger auto-detecta framework (Next.js) y gestor de paquetes (pnpm, por el `pnpm-lock.yaml`) — no hace falta correr comandos a mano por SSH, el panel corre `pnpm install` + `pnpm run build` solo.
-5. En la pantalla de revisión, sección **Variables de entorno** → cargar las mismas de `.env.example` (9 en total: 5 de DB + `AUTH_SECRET` + 3 de YouTube — ya no hay `CRON_SECRET`).
-6. Deploy. Reiniciar la app si se agregan/cambian variables después.
+### Cómo se llegó a esto (por si hay que tocarlo de nuevo)
 
-### Gotcha real que se dio en este despliegue: "Access denied" al hacer login
+Se evaluaron dos caminos y **los dos primeros que se probaron fallaron por límites reales de este plan de hosting compartido**, no por error de configuración:
+
+1. **GitHub Actions + SSH** (correr `git pull && pnpm install && pnpm build` por SSH desde un workflow) — **descartado**: confirmado por SSH real que este plan de Hostinger no expone `node`/`npm`/`pnpm` en el shell (ni siquiera `node` está en el PATH). El build y el runtime de Node solo los maneja el pipeline interno del panel, inalcanzable por SSH.
+2. **Conectar Git nativo a la Node.js App ya existente** (la que se había desplegado por zip) — **no es posible**: la pantalla de "Ajustes y reimplementación" de una app ya desplegada por zip solo ofrece "Usa archivos anteriores" / "Subir archivos nuevos", nunca una opción de GitHub. Hostinger solo deja elegir Git como fuente **al crear la app por primera vez**.
+3. **Lo que sí funcionó**: recrear la Node.js App desde cero (hPanel → Websites → remover el sitio actual → Add Website → Deploy Web App → fuente **Git/GitHub**, mismo dominio, mismo repo). Esto sí deja Git nativo con auto-deploy real.
+
+### Configuración de la Node.js App actual
+
+- Framework preset: Next.js · Node.js version: 22.x · Root directory: `./` · Package manager: pnpm · Output directory: `.next`
+- **Build command: `pnpm run build`**, sin tocar — el campo de hPanel es un dropdown cerrado que solo deja elegir entre los scripts que ya existen en `package.json` (no admite comandos encadenados a mano tipo `a && b`). Por eso el propio script `build` en `package.json` hace todo el trabajo:
+  ```json
+  "build": "drizzle-kit migrate && next build"
+  ```
+  Así las migraciones quedan automatizadas en cada deploy sin depender de un paso aparte (es idempotente, no rompe nada si no hay cambios de esquema). **Importante**: adentro de ese script hay que invocar `drizzle-kit` directo, no `pnpm run db:migrate` — un sub-shell del build no tiene el binario `pnpm` en su PATH (solo los binarios locales de `node_modules/.bin`), así que una invocación anidada de `pnpm` falla con "command not found".
+- Variables de entorno: las mismas 9 de siempre (ver `.env.example`), cargadas a mano en la Node.js App.
+- `public/uploads/` sobrevive a los deploys sin problema — el pipeline de Hostinger clona/reconstruye en un directorio de build (`.builds/source/repository/`) y esa carpeta nunca formó parte del repo (está en `.gitignore`), así que no hay riesgo de que un deploy la pise.
+
+### Gotchas reales de esta migración a Git nativo (todos ya resueltos, dejar documentado por si vuelven a aparecer)
+
+- **`pnpm/action-setup@v4` sin versión de pnpm especificada** → se fijó `"packageManager": "pnpm@11.15.1"` en `package.json` (necesario también para que `pnpm/action-setup` en `.github/workflows/ci.yml` no falle).
+- **Node 20 vs pnpm 11**: pnpm 11.x exige Node ≥ 22.13 — el workflow de CI tenía Node 20 hardcodeado, se cambió a 22.
+- **"Access denied" de MySQL de nuevo**, mismo patrón que en el despliegue original (ver más abajo), esta vez durante el paso de migración en build. Mismo tipo de causa/solución: contraseña de MySQL sin caracteres especiales.
+- **Procesos duplicados / assets con 404**: tras varios intentos de deploy fallidos seguidos, quedaron procesos Node viejos corriendo en paralelo (se veía en los logs de runtime como el mismo "Ready" repetido en pares). Un **"Redesplegar" manual** desde el dashboard de la app los limpia.
+- **El más importante — `next start` ignora `process.env.PORT` por defecto.** Esta modalidad de Node.js App de Hostinger le asigna un puerto dinámico a la app vía `$PORT` y espera que escuche ahí; `next start` a secas siempre usa el 3000 fijo. Si no coinciden, el proxy de Hostinger nunca ve la app "lista" y la mata/reinicia en loop indefinidamente — **sin ningún error en los logs de la app** (el síntoma es confuso: parece que arranca bien una y otra vez, pero el sitio da 503 todo el tiempo). Solución en `package.json`:
+  ```json
+  "start": "next start -p ${PORT:-3000}"
+  ```
+- **CDN cacheando páginas protegidas por auth**: la Node.js App tiene CDN activado por defecto, y cachea el HTML completo de rutas como `/` y `/auth/login` en el edge **sin tener en cuenta la cookie de sesión** — un visitante sin sesión podía recibir una copia cacheada del contenido protegido en vez de que `proxy.ts` lo redirija a login (porque el CDN nunca reenvía el pedido al origen, así que el middleware ni se entera). Se resolvió agregando `Cache-Control: private, no-store` a toda respuesta que pasa por `proxy.ts`. Después de cambiar esto (o el build command, o cualquier cosa que afecte cache) conviene purgar el caché del CDN desde hPanel para no seguir viendo versiones viejas.
+- **Ojo con `proxy.ts` — es el nombre correcto, no lo renombres a `middleware.ts`.** Next.js 16 renombró la convención de `middleware.ts`/`export function middleware` a `proxy.ts`/`export function proxy` (`middleware.ts` quedó deprecado, solo para Edge runtime). El build de Next confirma que se está usando bien si en el log de build aparece la línea `ƒ Proxy (Middleware)` en la tabla de rutas.
+
+### `.github/workflows/ci.yml`
+
+Un workflow de GitHub Actions separado (`build-check`) corre en cada push como red de seguridad — solo hace `pnpm install` + `pnpm exec next build` en el runner de GitHub, sin tocar el servidor ni la base de datos de producción (por eso usa `next build` directo y no el script `build` del proyecto, que incluye `drizzle-kit migrate` y necesitaría credenciales de DB que a propósito no viven en GitHub Secrets). Si este check falla, no impide el auto-deploy de hPanel — son dos cosas independientes, este es solo una alerta temprana de que algo no compila.
+
+### Gotcha real que se dio en el despliegue original (por zip): "Access denied" al hacer login
 
 Con todo desplegado y las env vars puestas, el login tiraba 500 con:
 ```
@@ -170,25 +191,7 @@ La IP en el error es la IP interna desde la que el contenedor de la Node.js App 
 1. **Acceso remoto no habilitado** — se probó agregando `%` en hPanel → MySQL Databases → **MySQL remoto**. No resolvió nada (el error seguía idéntico), así que esto ya estaba bien o no era la causa real.
 2. **Contraseña** — se **reseteó la contraseña del usuario MySQL a una sin caracteres especiales** (solo alfanumérico) y se actualizó `DB_PASSWORD` en las env vars. **Esto sí lo resolvió.**
 
-Conclusión: probablemente algún carácter especial de la contraseña original no viajaba bien al guardarse en el campo de variables de entorno del panel de Hostinger. **Recomendación para el futuro**: usar siempre contraseñas de base de datos alfanuméricas (sin `@ $ % " ' \` ni similares) para las credenciales que van a vivir en variables de entorno de este panel.
-
-## CI/CD (pendiente de construir)
-
-Todavía no existe. Decisión tomada durante el primer despliegue: automatizar recién ahora que el proceso manual ya está probado y funcionando (para no automatizar a ciegas algo nunca antes ejecutado). Dos caminos evaluados, ninguno implementado todavía:
-
-1. **Git integration nativa de hPanel** (Advanced/Websites → Git): Hostinger puede conectar un repo de GitHub y hacer pull automático vía webhook al hacer push. Más simple, cero config de CI externa — **probar esta primero**, revisar si el plan la soporta.
-2. **GitHub Actions + SSH**: un workflow que en cada push a `main` entra por SSH (hay acceso confirmado) y corre `git pull && pnpm install && pnpm db:migrate && pnpm build` + reinicia la Node.js App. Más control/logs, pero hay que guardar la llave SSH como secret en GitHub.
-
-**Datos concretos del servidor** (sacados de los logs de error durante el primer despliegue):
-- Ruta de la app en el servidor: `/home/u762014524/domains/gaiacapoeira.com/nodejs/`
-- Usuario de hosting: `u762014524`
-- Repo de GitHub: `https://github.com/Swithsere094/gaiacapoeira.git`, rama `main`
-
-Cosas a decidir cuando se arme esto:
-- ¿El deploy corre `pnpm db:migrate` automáticamente, o eso se sigue haciendo a mano por ahora? (Recomendado: automatizarlo también, es idempotente — ver sección de migraciones arriba.)
-- `public/uploads/` no debe borrarse en cada deploy — confirmar que el método elegido no haga un checkout limpio que se lleve por delante esa carpeta.
-- Variables de entorno de producción ya están puestas a mano en el Node.js App de hPanel (9 variables — ver `.env.example`) — un redeploy vía git no debería tocarlas, pero confirmarlo la primera vez.
-- **Gotcha ya conocido**: si en algún momento hay que volver a tocar `DB_PASSWORD` u otra variable con caracteres especiales en el panel de Hostinger, usar solo alfanumérico (ver el gotcha de "Access denied" documentado arriba, en la sección de despliegue) — no confirmado si el problema era el campo de variables de entorno específicamente o algo más amplio del panel.
+Conclusión: probablemente algún carácter especial de la contraseña original no viajaba bien al guardarse en el campo de variables de entorno del panel de Hostinger. **Recomendación para el futuro**: usar siempre contraseñas de base de datos alfanuméricas (sin `@ $ % " ' \` ni similares) para las credenciales que van a vivir en variables de entorno de este panel — este mismo problema volvió a aparecer una vez más durante la migración a Git nativo.
 
 ## Otras notas sueltas
 
