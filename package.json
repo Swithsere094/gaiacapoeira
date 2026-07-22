@@ -5,7 +5,7 @@
   "packageManager": "pnpm@11.15.1",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm run db:migrate && next build",
     "start": "next start",
     "lint": "eslint .",
     "db:generate": "drizzle-kit generate",
