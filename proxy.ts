@@ -12,17 +12,23 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next()
+    const response = NextResponse.next()
+    response.headers.set("Cache-Control", "private, no-store")
+    return response
   }
 
   const sessionCookie = request.cookies.get("gaia-session")
   if (!sessionCookie) {
     const loginUrl = new URL("/auth/login", request.url)
     loginUrl.searchParams.set("next", pathname)
-    return NextResponse.redirect(loginUrl)
+    const response = NextResponse.redirect(loginUrl)
+    response.headers.set("Cache-Control", "private, no-store")
+    return response
   }
 
-  return NextResponse.next()
+  const response = NextResponse.next()
+  response.headers.set("Cache-Control", "private, no-store")
+  return response
 }
 
 export const config = {
