@@ -231,10 +231,10 @@ export function SongCard({
           >
             <button
               onClick={() => setShowVideo(false)}
-              className="absolute -top-12 right-0 p-2 text-foreground hover:text-primary transition-colors"
+              className="absolute top-2 right-2 z-10 p-2 rounded-full bg-background/80 text-foreground hover:text-primary transition-colors"
               aria-label="Cerrar video"
             >
-              <X className="w-8 h-8" />
+              <X className="w-5 h-5" />
             </button>
             <iframe
               src={embedUrl}

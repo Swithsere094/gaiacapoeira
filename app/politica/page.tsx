@@ -306,7 +306,7 @@ export default function PoliticaPage() {
                       </span>
                     )}
 
-                    <h3 className="font-serif text-lg font-bold text-card-foreground">
+                    <h3 className="font-serif text-lg font-bold text-card-foreground break-words">
                       {doc.title}
                     </h3>
 
@@ -323,10 +323,10 @@ export default function PoliticaPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         download={doc.file_name ?? true}
-                        className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                        className="flex items-center gap-2 mt-3 w-fit max-w-full px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
                       >
-                        <Download className="w-4 h-4" />
-                        {doc.file_name ?? "Descargar archivo"}
+                        <Download className="w-4 h-4 shrink-0" />
+                        <span className="min-w-0 break-words">{doc.file_name ?? "Descargar archivo"}</span>
                       </a>
                     )}
 
