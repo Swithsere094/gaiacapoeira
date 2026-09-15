@@ -5,6 +5,7 @@ import { ArrowLeft, Download } from "lucide-react"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
+import { ManualToc } from "@/components/manual-toc"
 import ManualContent from "@/content/politica/manual-convivencia.mdx"
 
 export default function ManualConvivenciaPage() {
@@ -15,7 +16,7 @@ export default function ManualConvivenciaPage() {
       </div>
 
       <div className="pt-24 pb-16 print:pt-0 print:pb-0">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="pt-12 mb-2 print:hidden flex items-center justify-between gap-4 flex-wrap">
             <Link
               href="/politica"
@@ -30,9 +31,12 @@ export default function ManualConvivenciaPage() {
             </Button>
           </div>
 
-          <article className="pt-8 print:pt-0">
-            <ManualContent />
-          </article>
+          <div className="pt-8 print:pt-0 lg:flex lg:items-start lg:gap-10">
+            <ManualToc />
+            <article className="min-w-0 flex-1 max-w-3xl">
+              <ManualContent />
+            </article>
+          </div>
         </div>
       </div>
 
