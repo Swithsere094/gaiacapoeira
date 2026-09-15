@@ -1,6 +1,6 @@
 /**
  * Tipos del sistema de usuarios.
- * Los usuarios se almacenan en la tabla `usuarios` de Supabase.
+ * Los usuarios se almacenan en la tabla `usuarios` (MySQL, vía Drizzle).
  * La autenticación usa iron-session con bcrypt para las contraseñas.
  */
 

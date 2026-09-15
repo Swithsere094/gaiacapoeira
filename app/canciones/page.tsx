@@ -98,7 +98,7 @@ export default function CancionesPage() {
       const data = await res.json()
       setSongs(data)
     } catch {
-      setError("No se pudieron cargar las canciones. Revisa la conexión a Supabase.")
+      setError("No se pudieron cargar las canciones. Intenta de nuevo más tarde.")
     } finally {
       setLoading(false)
     }

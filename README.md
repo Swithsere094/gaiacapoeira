@@ -1,35 +1,36 @@
-# v0-repositorio-de-capoeira
+# Gaia Capoeira
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
+Sitio web del grupo de capoeira **Areia no Mar**: rodas (videos de eventos), cantorias (videos de canto), catálogo de canciones, documentos de política interna y gestión de usuarios/miembros.
 
-## Built with v0
+En producción en [gaiacapoeira.com](https://gaiacapoeira.com).
 
-This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.
+## Stack
 
-[Continue working on v0 →](https://v0.app/chat/projects/prj_09HmwVwD04kLz9CO0tdhnni7FX9O)
+- **Next.js 16** (App Router) + React 19 + TypeScript
+- **Tailwind CSS 4** + shadcn/ui (Radix UI)
+- **MySQL 8** vía **Drizzle ORM**
+- Auth propio con `iron-session` + `bcryptjs`
+- Hosting: Hostinger (Unlimited Web Hosting), con auto-deploy vía Git nativo
 
-## Getting Started
+Para el contexto completo del proyecto (arquitectura, decisiones de migración, gotchas de despliegue), ver [CLAUDE.md](./CLAUDE.md).
 
-First, run the development server:
+## Desarrollo local
+
+Requiere MySQL corriendo localmente (XAMPP) y pnpm.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copiar `.env.example` a `.env.local` y completar las variables (ver detalle en CLAUDE.md).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Abrir [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+## Migraciones de base de datos
 
-To learn more, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
-
-<a href="https://v0.app/chat/api/kiro/clone/cdkalma/v0-repositorio-de-capoeira" alt="Open in Kiro"><img src="https://pdgvvgmkdvyeydso.public.blob.vercel-storage.com/open%20in%20kiro.svg?sanitize=true" /></a>
+```bash
+pnpm db:generate   # genera la migración a partir de lib/db/schema.ts
+pnpm db:migrate    # la aplica
+pnpm db:studio     # GUI de Drizzle Studio
+```

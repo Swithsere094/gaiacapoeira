@@ -17,7 +17,6 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Areia no Mar - Repositorio del Grupo',
   description: 'Videos, rodas, cancionero y documentos para nuestra comunidad de capoeira',
-  generator: 'v0.app',
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },

@@ -100,7 +100,7 @@ export default function PoliticaPage() {
       const data = await res.json()
       setDocs(data)
     } catch {
-      setError("No se pudieron cargar los documentos. Revisa la conexión a Supabase.")
+      setError("No se pudieron cargar los documentos. Intenta de nuevo más tarde.")
     } finally {
       setLoading(false)
     }
