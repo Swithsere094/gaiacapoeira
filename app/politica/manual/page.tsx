@@ -1,0 +1,44 @@
+"use client"
+
+import Link from "next/link"
+import { ArrowLeft, Download } from "lucide-react"
+import { Navigation } from "@/components/navigation"
+import { Footer } from "@/components/footer"
+import { Button } from "@/components/ui/button"
+import ManualContent from "@/content/politica/manual-convivencia.mdx"
+
+export default function ManualConvivenciaPage() {
+  return (
+    <main className="min-h-screen">
+      <div className="print:hidden">
+        <Navigation />
+      </div>
+
+      <div className="pt-24 pb-16 print:pt-0 print:pb-0">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="pt-12 mb-2 print:hidden flex items-center justify-between gap-4 flex-wrap">
+            <Link
+              href="/politica"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Volver a Política
+            </Link>
+            <Button onClick={() => window.print()} className="gap-2 shrink-0">
+              <Download className="w-4 h-4" />
+              Descargar PDF
+            </Button>
+          </div>
+
+          <article className="pt-8 print:pt-0">
+            <ManualContent />
+          </article>
+        </div>
+      </div>
+
+      <div className="print:hidden">
+        <Footer />
+      </div>
+    </main>
+  )
+}

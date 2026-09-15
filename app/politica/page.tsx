@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import { SectionLayout } from "@/components/section-layout"
 import {
@@ -69,6 +70,7 @@ const EMPTY_FORM = {
 export default function PoliticaPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === "admin"
+  const router = useRouter()
 
   const [docs, setDocs] = useState<PoliticaDoc[]>([])
   const [loading, setLoading] = useState(true)
@@ -285,19 +287,33 @@ export default function PoliticaPage() {
       {!loading && !error && (
         <div className="space-y-4">
           {filteredDocs.map((doc) => {
+            // Cordas y Manual de Convivencia ya no se sirven como PDF subido
+            // (se perdía en cada reinicio de la instancia en Hostinger) —
+            // ahora son páginas propias con el contenido versionado en el repo.
+            const isCordas = doc.category === "Cordas y Graduación"
+            const isManual = doc.category === "Manual de Convivencia"
+            const isClickable = isCordas || isManual || Boolean(doc.file_url)
             const openFile = () => {
+              if (isCordas) {
+                router.push("/politica/cordas")
+                return
+              }
+              if (isManual) {
+                router.push("/politica/manual")
+                return
+              }
               if (doc.file_url) window.open(doc.file_url, "_blank", "noopener,noreferrer")
             }
             return (
               <article
                 key={doc.id}
-                role={doc.file_url ? "button" : undefined}
-                tabIndex={doc.file_url ? 0 : undefined}
+                role={isClickable ? "button" : undefined}
+                tabIndex={isClickable ? 0 : undefined}
                 onClick={openFile}
                 onKeyDown={(e) => e.key === "Enter" && openFile()}
                 className={cn(
                   "bg-card rounded-xl p-6 transition-colors",
-                  doc.file_url && "cursor-pointer hover:bg-secondary/40"
+                  isClickable && "cursor-pointer hover:bg-secondary/40"
                 )}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -330,10 +346,14 @@ export default function PoliticaPage() {
                         </p>
                       )}
 
-                      {doc.file_url && (
+                      {isClickable && (
                         <span className="inline-flex items-center gap-1.5 mt-3 text-xs text-primary font-medium">
                           <Download className="w-3.5 h-3.5 shrink-0" />
-                          Ver documento
+                          {isCordas
+                            ? "Ver sistema de cordas"
+                            : isManual
+                              ? "Ver manual de convivencia"
+                              : "Ver documento"}
                         </span>
                       )}
 
