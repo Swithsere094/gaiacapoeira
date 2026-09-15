@@ -212,6 +212,14 @@ Esto pasa dentro de `/usr/local/lsws/fcgi-bin/lsnode.js` (el supervisor de proce
 
 **Efecto secundario importante**: ese reinicio completo **rompió los archivos ya subidos en `public/uploads/`** (los documentos de política dejaron de servirse) — a diferencia de un deploy normal por git, que sí los respeta (ver nota más arriba sobre por qué `public/uploads/` sobrevive a los deploys). Se solucionó volviendo a subir los archivos afectados a mano. Si se vuelve a pedir este reinicio completo en el futuro, avisar que puede hacer falta re-subir documentos de `/politica` después.
 
+### Variante del mismo gotcha (2026-09-15): deploy fallido sin ningún log en ningún lado
+
+Un deploy falló sin dejar **absolutamente ningún log** — ni de tiempo de ejecución, ni de compilación, ni el archivo de error de Node.js, ni el de consola. El diagnóstico con IA de Hostinger (poco confiable, ver nota arriba) sugirió revisar `DATABASE_URL` — una variable que este proyecto nunca usó (usa `DB_HOST`/`DB_PORT`/`DB_USER`/`DB_PASSWORD`/`DB_NAME`), confirmando que es una respuesta de plantilla genérica, no un análisis real. Se descartó que el código fuera la causa: el mismo commit pasó el workflow de CI de GitHub (`next build` limpio en un runner externo) y el build local también estaba sano.
+
+El intento de deploy sí quedó registrado en hPanel con timestamp correcto (o sea, el webhook de GitHub disparó bien) — el pipeline simplemente no llegó a producir ningún output en ningún lado. Correlación encontrada en el status page oficial de Hostinger (`statuspage.hostinger.com`): ese mismo día hubo un incidente de **"hPanel Accessibility Problems"** (carga excesiva en el backend del panel, causando problemas de acceso/carga continua), marcado como resuelto poco después. Es la explicación más plausible: el pipeline de deploy no llegó a inicializar el sistema de logging porque el backend de hPanel estaba bajo esa carga.
+
+**Solución que funcionó esta vez**: un simple **"Redesplegar"** alcanzó (a diferencia del incidente de `lsnode.js` de arriba, donde "Redesplegar" no resolvía nada dos veces seguidas) — consistente con que la causa era el incidente de hPanel, no un proceso zombie. Si vuelve a pasar un deploy sin ningún log: primero revisar `statuspage.hostinger.com` por incidentes activos antes de asumir que es el mismo patrón de proceso zombie de arriba (la solución es distinta: acá alcanza con reintentar, no hace falta pedir el reinicio completo a soporte).
+
 ## Otras notas sueltas
 
 - `next.config.mjs` tiene `typescript: { ignoreBuildErrors: true }` (preexistente, no es cosa de esta migración) — `next build` no va a fallar por errores de tipos. Usa `npx tsc --noEmit` para chequear tipos de verdad.
