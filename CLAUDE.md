@@ -196,6 +196,20 @@ La IP en el error es la IP interna desde la que el contenedor de la Node.js App 
 
 Conclusión: probablemente algún carácter especial de la contraseña original no viajaba bien al guardarse en el campo de variables de entorno del panel de Hostinger. **Recomendación para el futuro**: usar siempre contraseñas de base de datos alfanuméricas (sin `@ $ % " ' \` ni similares) para las credenciales que van a vivir en variables de entorno de este panel — este mismo problema volvió a aparecer una vez más durante la migración a Git nativo.
 
+### Gotcha real (2026-09-14/15): "Redesplegar" no arranca, `Server is not running` en `lsnode.js`
+
+Después de un deploy que sí compiló bien (confirmado con el workflow de CI de GitHub, independiente de Hostinger), la app no levantaba. El log de runtime mostraba:
+```
+Error: Server is not running.
+at Server.close (node:net:2359:12)
+...
+```
+Esto pasa dentro de `/usr/local/lsws/fcgi-bin/lsnode.js` (el supervisor de procesos Node de LiteSpeed) — no es un error de la app, es el proceso Node anterior quedando en un estado zombie que el panel no logra limpiar solo con **"Redesplegar"** (se probó dos veces, no alcanzó). El asistente de IA de Hostinger, al preguntarle, volvió a insistir con el diagnóstico ya descartado de `@swc/helpers` (ver arriba) — resultó ser irrelevante de nuevo; no confiar en ese diagnóstico sin ver el log crudo primero.
+
+**Solución**: soporte humano de Hostinger (vía chat) tiene una opción para **reiniciar completamente la instancia y matar los procesos en ejecución**, que no está expuesta en el panel normal (no es lo mismo que "Redesplegar"). Pedirla explícitamente si un "Redesplegar" no resuelve un problema de arranque.
+
+**Efecto secundario importante**: ese reinicio completo **rompió los archivos ya subidos en `public/uploads/`** (los documentos de política dejaron de servirse) — a diferencia de un deploy normal por git, que sí los respeta (ver nota más arriba sobre por qué `public/uploads/` sobrevive a los deploys). Se solucionó volviendo a subir los archivos afectados a mano. Si se vuelve a pedir este reinicio completo en el futuro, avisar que puede hacer falta re-subir documentos de `/politica` después.
+
 ## Otras notas sueltas
 
 - `next.config.mjs` tiene `typescript: { ignoreBuildErrors: true }` (preexistente, no es cosa de esta migración) — `next build` no va a fallar por errores de tipos. Usa `npx tsc --noEmit` para chequear tipos de verdad.
