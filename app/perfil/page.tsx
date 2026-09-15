@@ -200,23 +200,35 @@ export default function PerfilPage() {
               <p className="text-sm text-muted-foreground">Elige la cuerda que te identifica.</p>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
                 {CORDAS.map((c) => (
                   <button
                     key={c.id}
                     onClick={() => handleSelectAvatar(c.id)}
                     title={c.label}
-                    className={`rounded-full overflow-hidden border-2 transition-all focus:outline-none ${
-                      selectedAvatar === c.id
-                        ? "border-primary ring-2 ring-primary ring-offset-2 scale-110"
-                        : "border-transparent hover:border-primary/40"
+                    className={`flex flex-col items-center gap-1.5 rounded-lg p-1.5 transition-all focus:outline-none ${
+                      selectedAvatar === c.id ? "bg-primary/10" : "hover:bg-secondary"
                     }`}
                   >
-                    <img
-                      src={`/Cuerda x cuerda/${c.id}.png`}
-                      alt={c.label}
-                      className="w-full aspect-square object-cover"
-                    />
+                    <div
+                      className={`w-full aspect-square rounded-lg overflow-hidden border-2 flex items-center justify-center transition-all ${
+                        selectedAvatar === c.id
+                          ? "border-primary ring-2 ring-primary ring-offset-2"
+                          : "border-transparent hover:border-primary/40"
+                      }`}
+                    >
+                      {/* Los PNG tienen mucho margen transparente y el dibujo no está centrado
+                          en el lienzo (ver nota en CLAUDE.md) — mismo ajuste que en el navbar. */}
+                      <img
+                        src={`/Cuerda x cuerda/${c.id}.png`}
+                        alt={c.label}
+                        className="w-full h-full object-contain"
+                        style={{ transform: "translateY(9.6%) scale(1.8)" }}
+                      />
+                    </div>
+                    <span className="text-[11px] leading-tight text-center text-muted-foreground">
+                      {c.label}
+                    </span>
                   </button>
                 ))}
               </div>

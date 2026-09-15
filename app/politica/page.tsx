@@ -284,90 +284,101 @@ export default function PoliticaPage() {
       {/* Documents List */}
       {!loading && !error && (
         <div className="space-y-4">
-          {filteredDocs.map((doc) => (
-            <article key={doc.id} className="bg-card rounded-xl p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4 min-w-0 flex-1">
-                  {/* Icon */}
-                  <div className="w-10 h-10 shrink-0 rounded-lg bg-chart-4/20 flex items-center justify-center mt-0.5">
-                    <FileText className="w-5 h-5 text-chart-4" />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    {/* Category badge */}
-                    {doc.category && (
-                      <span
-                        className={cn(
-                          "inline-block px-2 py-0.5 rounded text-xs font-medium mb-2",
-                          categoryColors[doc.category] ?? "bg-secondary text-secondary-foreground"
-                        )}
-                      >
-                        {doc.category}
-                      </span>
-                    )}
-
-                    <h3 className="font-serif text-lg font-bold text-card-foreground break-words">
-                      {doc.title}
-                    </h3>
-
-                    {doc.content && (
-                      <p className="mt-1 text-sm text-muted-foreground leading-relaxed line-clamp-3">
-                        {doc.content}
-                      </p>
-                    )}
-
-                    {/* Download button */}
-                    {doc.file_url && (
-                      <a
-                        href={doc.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download={doc.file_name ?? true}
-                        className="flex items-center gap-2 mt-3 w-fit max-w-full px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
-                      >
-                        <Download className="w-4 h-4 shrink-0" />
-                        <span className="min-w-0 break-words">{doc.file_name ?? "Descargar archivo"}</span>
-                      </a>
-                    )}
-
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {new Date(doc.created_at).toLocaleDateString("es-ES", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Actions — solo admin */}
-                {isAdmin && (
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => openEdit(doc)}
-                      onKeyDown={(e) => e.key === "Enter" && openEdit(doc)}
-                      className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
-                      aria-label="Editar documento"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </span>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => handleDelete(doc.id)}
-                      onKeyDown={(e) => e.key === "Enter" && handleDelete(doc.id)}
-                      className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                      aria-label="Eliminar documento"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </span>
-                  </div>
+          {filteredDocs.map((doc) => {
+            const openFile = () => {
+              if (doc.file_url) window.open(doc.file_url, "_blank", "noopener,noreferrer")
+            }
+            return (
+              <article
+                key={doc.id}
+                role={doc.file_url ? "button" : undefined}
+                tabIndex={doc.file_url ? 0 : undefined}
+                onClick={openFile}
+                onKeyDown={(e) => e.key === "Enter" && openFile()}
+                className={cn(
+                  "bg-card rounded-xl p-6 transition-colors",
+                  doc.file_url && "cursor-pointer hover:bg-secondary/40"
                 )}
-              </div>
-            </article>
-          ))}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4 min-w-0 flex-1">
+                    {/* Icon */}
+                    <div className="w-10 h-10 shrink-0 rounded-lg bg-chart-4/20 flex items-center justify-center mt-0.5">
+                      <FileText className="w-5 h-5 text-chart-4" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      {/* Category badge */}
+                      {doc.category && (
+                        <span
+                          className={cn(
+                            "inline-block px-2 py-0.5 rounded text-xs font-medium mb-2",
+                            categoryColors[doc.category] ?? "bg-secondary text-secondary-foreground"
+                          )}
+                        >
+                          {doc.category}
+                        </span>
+                      )}
+
+                      <h3 className="font-serif text-lg font-bold text-card-foreground break-words">
+                        {doc.title}
+                      </h3>
+
+                      {doc.content && (
+                        <p className="mt-1 text-sm text-muted-foreground leading-relaxed line-clamp-3">
+                          {doc.content}
+                        </p>
+                      )}
+
+                      {doc.file_url && (
+                        <span className="inline-flex items-center gap-1.5 mt-3 text-xs text-primary font-medium">
+                          <Download className="w-3.5 h-3.5 shrink-0" />
+                          Ver documento
+                        </span>
+                      )}
+
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {new Date(doc.created_at).toLocaleDateString("es-ES", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Actions — solo admin */}
+                  {isAdmin && (
+                    <div
+                      className="flex items-center gap-1 shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openEdit(doc)}
+                        onKeyDown={(e) => e.key === "Enter" && openEdit(doc)}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                        aria-label="Editar documento"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </span>
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleDelete(doc.id)}
+                        onKeyDown={(e) => e.key === "Enter" && handleDelete(doc.id)}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                        aria-label="Eliminar documento"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </article>
+            )
+          })}
         </div>
       )}
 

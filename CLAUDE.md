@@ -131,7 +131,9 @@ pnpm dev
 
 Nota: con contraseña vacía, `drizzle.config.ts` necesita `password: process.env.DB_PASSWORD || undefined` — un string vacío hace que drizzle-kit crea que falta la contraseña y tire error de "missing params".
 
-Para tener un usuario con el que entrar: `npx tsx migration/seed-admin.ts admin admin123`.
+Para tener un usuario con el que entrar: `npx tsx migration/seed-admin.ts admin admin123`. Ojo: en esta DB local el username `admin` ya existe (viene de la migración de datos reales, con otra contraseña que no conocemos), así que ese comando puntual va a fallar con "Duplicate entry" — usar otro username.
+
+Para pruebas de UI en browser (Playwright, capturas de pantalla, etc.) hay un usuario admin de prueba dejado a propósito en la DB local: `navbar_qa_test` / `navbar_qa_test_pw123`. No se borra entre sesiones para no tener que re-seedearlo cada vez — es solo local, no existe en producción.
 
 ## Cómo agregar un módulo nuevo (ej. activar "movimientos")
 
@@ -198,6 +200,8 @@ Conclusión: probablemente algún carácter especial de la contraseña original 
 
 - `next.config.mjs` tiene `typescript: { ignoreBuildErrors: true }` (preexistente, no es cosa de esta migración) — `next build` no va a fallar por errores de tipos. Usa `npx tsc --noEmit` para chequear tipos de verdad.
 - El gestor de paquetes es pnpm — no uses `npm install` ni generes un `package-lock.json`.
+- Gotcha de assets: los PNG de `public/Cuerda x cuerda/` (íconos de graduación/corda, referenciados vía `getCordaSrc()` en `lib/constants/cordas.ts`) tienen mucho margen transparente alrededor del dibujo — medido con canvas + getImageData sobre varios archivos del set: el dibujo ocupa ~45.5% x ~47.5% del lienzo de 2160x2160, centrado horizontalmente (~50%) pero **no** verticalmente (centro real en ~40.4%, no 50% — bastante más espacio vacío abajo que arriba). Con `object-contain` a secas se ven mucho más chicos de lo esperado dentro de su caja, y descentrados hacia arriba. El componente `CordaAvatar` en `components/navigation.tsx` lo compensa con un contenedor `overflow-hidden` (que además define el tamaño real de la caja — el `<img>` de adentro no debe dictar el layout) + `style={{ transform: "translateY(9.6%) scale(1.8)" }}` en la imagen. **Importante el orden**: `translateY` va primero (se resuelve como % de la caja sin transformar y por eso NO se amplifica por el scale que le sigue) — si se invierte el orden (`scale(...) translateY(...)`), el translate queda multiplicado por el factor de escala y el resultado se descentra (ya pasó una vez). Si se reutiliza este patrón en otro lado (perfil, admin de usuarios), aplicar el mismo truco en vez de solo agrandar la caja, y si el contenedor (ej. un `Button` de shadcn) tiene una altura fija tipo `h-9`, agregar `h-auto` + padding — si no, el ícono agrandado se sale del fondo/hover del botón aunque el `overflow-hidden` interno esté recortando bien la imagen.
+- **Ojo con clases de Tailwind `scale-*`/`translate-*` con valor arbitrario negativo** (ej. `-translate-y-[8%]`) en este setup (Tailwind 4 + Turbopack, Next 16): se detectó un caso donde la clase aparecía en el DOM pero el navegador nunca generaba el `transform` (quedaba `transform: none`, sin ningún error visible). No se investigó la causa raíz a fondo (¿JIT de Tailwind no matcheando el arbitrary value con signo negativo por fuera del bracket, algo de Turbopack?), pero el workaround que sí funcionó de forma confiable fue usar `style={{ transform: "..." }}` inline en vez de las clases de Tailwind. Si un `transform` de Tailwind no parece aplicarse, chequear `getComputedStyle(el).transform` en devtools antes de asumir que es un problema de layout — puede ser esto.
 
 ## Decisión: se descartó el cron automático
 

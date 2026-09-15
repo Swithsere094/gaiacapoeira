@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Menu, X, Play, ScrollText, Music, LogIn, LogOut, User, Users, ShieldCheck } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
@@ -16,15 +16,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-function CordaAvatar({ src, size }: { src: string | null; size: "sm" | "md" }) {
-  const dim = size === "sm" ? "w-7 h-7" : "w-10 h-10"
-  const iconSize = size === "sm" ? "w-4 h-4" : "w-5 h-5"
+function CordaAvatar({ src, size }: { src: string | null; size: "sm" | "md" | "lg" }) {
+  const dim = size === "sm" ? "w-10 h-10" : size === "md" ? "w-10 h-10" : "w-14 h-14"
+  const iconSize = size === "sm" ? "w-5 h-5" : size === "md" ? "w-5 h-5" : "w-7 h-7"
   if (!src) return (
-    <div className={`${dim} rounded-full bg-primary flex items-center justify-center shrink-0`}>
-      <User className={`${iconSize} text-primary-foreground`} />
+    <div className={`${dim} rounded-full bg-primary flex items-center justify-center shrink-0 transition-all duration-300`}>
+      <User className={`${iconSize} text-primary-foreground transition-all duration-300`} />
     </div>
   )
-  return <img src={src} alt="Cuerda" className={`${dim} object-contain drop-shadow shrink-0`} />
+  return (
+    <div className={`${dim} overflow-hidden shrink-0 transition-all duration-300 flex items-center justify-center`}>
+      {/* Los PNG de /Cuerda x cuerda/ tienen mucho margen transparente alrededor del dibujo y
+          el dibujo en sí no está centrado en el lienzo (centro real medido en ~40.4% vertical,
+          no 50%) — translateY corrige eso antes del escalado (por eso va primero: así no se
+          amplifica con el scale) y el scale lo agranda para que se note dentro de la caja. */}
+      <img
+        src={src}
+        alt="Cuerda"
+        className="w-full h-full object-contain drop-shadow"
+        style={{ transform: "translateY(9.6%) scale(1.8)" }}
+      />
+    </div>
+  )
 }
 
 const navItems = [
@@ -36,17 +49,47 @@ const navItems = [
 export function Navigation() {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const { user, loading, signOut } = useAuth()
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 0)
+    handleScroll()
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div
+          className={cn(
+            "flex items-center justify-between transition-all duration-300",
+            scrolled ? "h-16" : "h-24"
+          )}
+        >
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-serif font-bold text-lg">A</span>
+            <div
+              className={cn(
+                "rounded-full bg-primary flex items-center justify-center transition-all duration-300",
+                scrolled ? "w-10 h-10" : "w-14 h-14"
+              )}
+            >
+              <span
+                className={cn(
+                  "text-primary-foreground font-serif font-bold transition-all duration-300",
+                  scrolled ? "text-lg" : "text-2xl"
+                )}
+              >
+                A
+              </span>
             </div>
-            <span className="font-serif text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+            <span
+              className={cn(
+                "font-serif font-bold text-foreground group-hover:text-primary transition-all duration-300",
+                scrolled ? "text-xl" : "text-2xl"
+              )}
+            >
               Areia no Mar
             </span>
           </Link>
@@ -79,8 +122,11 @@ export function Navigation() {
                 {user ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="ml-2 gap-2">
-                        <CordaAvatar src={getCordaSrc(user.avatar)} size="sm" />
+                      <Button
+                        variant="ghost"
+                        className="ml-2 gap-2 h-auto py-1.5 hover:bg-secondary hover:text-foreground"
+                      >
+                        <CordaAvatar src={getCordaSrc(user.avatar)} size={scrolled ? "sm" : "lg"} />
                         <span className="max-w-24 truncate">
                           {user.name || user.username}
                         </span>
