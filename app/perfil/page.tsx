@@ -221,9 +221,13 @@ export default function PerfilPage() {
                     >
                       {/* Los PNG tienen mucho margen transparente y el dibujo no está centrado
                           en el lienzo (ver nota en CLAUDE.md) — mismo ajuste que en el navbar. */}
+                      {/* alt="" a propósito: el <span> de abajo ya muestra
+                          c.label como texto visible, y como está dentro del
+                          mismo <button>, un alt no vacío duplicaba el nombre
+                          accesible del botón (ver auditoría de a11y). */}
                       <img
                         src={`/Cuerda x cuerda/${c.id}.png`}
-                        alt={c.label}
+                        alt=""
                         className="w-full h-full object-contain"
                         style={{ transform: "translateY(9.6%) scale(1.8)" }}
                       />
