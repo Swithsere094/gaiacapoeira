@@ -27,12 +27,15 @@ const typeLabels: Record<string, string> = {
   samba: "Samba",
 }
 
+// text-foreground a propósito (no el color del ritmo): text-{color} sobre
+// bg-{color}/20 no cumple el contraste mínimo de WCAG AA — ver auditoría
+// de accesibilidad. El color queda solo en el fondo.
 const typeColors: Record<string, string> = {
-  ladainha: "bg-primary/20 text-primary",
-  corrido: "bg-accent/20 text-accent",
-  quadra: "bg-chart-4/20 text-chart-4",
-  chula: "bg-chart-5/20 text-chart-5",
-  samba: "bg-chart-3/20 text-chart-3",
+  ladainha: "bg-primary/20 text-foreground",
+  corrido: "bg-accent/20 text-foreground",
+  quadra: "bg-chart-4/20 text-foreground",
+  chula: "bg-chart-5/20 text-foreground",
+  samba: "bg-chart-3/20 text-foreground",
 }
 
 export function SongCard({

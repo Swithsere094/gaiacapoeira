@@ -314,7 +314,7 @@ export default function PerfilPage() {
                       type="button"
                       onClick={() => setShowCurrent((v) => !v)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      tabIndex={-1}
+                      aria-label={showCurrent ? "Ocultar contraseña" : "Mostrar contraseña"}
                     >
                       {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -340,7 +340,7 @@ export default function PerfilPage() {
                       type="button"
                       onClick={() => setShowNew((v) => !v)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      tabIndex={-1}
+                      aria-label={showNew ? "Ocultar contraseña" : "Mostrar contraseña"}
                     >
                       {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>

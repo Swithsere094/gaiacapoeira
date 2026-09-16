@@ -12,12 +12,16 @@ interface ArticleCardProps {
   slug: string
 }
 
+// El texto de las badges usa text-foreground (no el color de la categoría)
+// a propósito: text-{color} sobre bg-{color}/20 no cumple el contraste
+// mínimo de WCAG AA para texto normal (falla hasta 2:1 en el caso de
+// chart-5) — el color solo vive en el fondo, ver auditoría de accesibilidad.
 const categoryColors: Record<string, string> = {
-  Historia: "bg-primary/20 text-primary",
-  Estilos: "bg-accent/20 text-accent",
-  Música: "bg-chart-4/20 text-chart-4",
-  Experiencias: "bg-chart-5/20 text-chart-5",
-  Filosofía: "bg-chart-3/20 text-chart-3",
+  Historia: "bg-primary/20 text-foreground",
+  Estilos: "bg-accent/20 text-foreground",
+  Música: "bg-chart-4/20 text-foreground",
+  Experiencias: "bg-chart-5/20 text-foreground",
+  Filosofía: "bg-chart-3/20 text-foreground",
 }
 
 export function ArticleCard({

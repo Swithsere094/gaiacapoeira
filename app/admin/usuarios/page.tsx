@@ -64,8 +64,10 @@ const EMPTY_FORM = {
 }
 
 const roleLabels = { admin: "Administrador", member: "Miembro" }
+// text-foreground en vez de text-primary: bg-primary/20 + text-primary no
+// cumple el contraste mínimo de WCAG AA — ver auditoría de accesibilidad.
 const roleColors = {
-  admin:  "bg-primary/20 text-primary",
+  admin:  "bg-primary/20 text-foreground",
   member: "bg-secondary text-secondary-foreground",
 }
 

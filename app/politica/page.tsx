@@ -53,11 +53,14 @@ const CATEGORIES = [
   "Otro",
 ]
 
+// text-foreground a propósito (no el color de la categoría): text-{color}
+// sobre bg-{color}/20 no cumple el contraste mínimo de WCAG AA — ver
+// auditoría de accesibilidad. El color queda solo en el fondo.
 const categoryColors: Record<string, string> = {
-  "Manual de Convivencia": "bg-primary/20 text-primary",
-  "Cordas y Graduación":   "bg-chart-5/20 text-chart-5",
-  "Reglamento":            "bg-chart-4/20 text-chart-4",
-  "Comunicados":           "bg-accent/20 text-accent",
+  "Manual de Convivencia": "bg-primary/20 text-foreground",
+  "Cordas y Graduación":   "bg-chart-5/20 text-foreground",
+  "Reglamento":            "bg-chart-4/20 text-foreground",
+  "Comunicados":           "bg-accent/20 text-foreground",
   "Otro":                  "bg-secondary text-secondary-foreground",
 }
 

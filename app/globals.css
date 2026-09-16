@@ -27,7 +27,10 @@
   --ring: #AF9A4F;
   --chart-1: #AF9A4F;
   --chart-2: #c4b06a;
-  --chart-3: #8a7a3f;
+  /* #8a7a3f original no cumplía WCAG AA (4.41:1) como fondo sólido con
+     texto --primary-foreground encima (badge "Avanzado" de dificultad,
+     único uso de este token) — aclarado lo mínimo para pasar 4.5:1. */
+  --chart-3: #93823f;
   --chart-4: #d4c485;
   --chart-5: #6a5a2f;
   --radius: 0.5rem;

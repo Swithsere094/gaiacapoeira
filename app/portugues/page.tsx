@@ -195,10 +195,16 @@ export default function PortuguesPage() {
                       >
                         <button
                           onClick={() => toggleWord(wordId)}
+                          aria-label={
+                            isCompleted
+                              ? `Marcar "${word.portuguese}" como no aprendida`
+                              : `Marcar "${word.portuguese}" como aprendida`
+                          }
+                          aria-pressed={isCompleted}
                           className={cn(
                             "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
-                            isCompleted 
-                              ? "bg-accent border-accent text-accent-foreground" 
+                            isCompleted
+                              ? "bg-accent border-accent text-accent-foreground"
                               : "border-muted-foreground hover:border-primary"
                           )}
                         >
