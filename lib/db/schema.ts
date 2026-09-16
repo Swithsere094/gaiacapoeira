@@ -10,6 +10,7 @@ import {
   datetime,
   customType,
   mysqlEnum,
+  index,
 } from "drizzle-orm/mysql-core"
 
 // mysql2 no parsea columnas JSON de vuelta a objetos JS (las devuelve como
@@ -94,6 +95,22 @@ export const songs = mysqlTable("songs", {
   created_at: datetime("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updated_at: datetime("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 })
+
+// Analíticas propias (reemplaza a @vercel/analytics, eliminado en la
+// migración — ver CLAUDE.md). user_id nullable + SET NULL, no CASCADE:
+// no es "dato propio" del usuario en el sentido de comments/favorites,
+// es un registro agregado del sitio — si se borra el usuario, las visitas
+// que generó siguen contando para las estadísticas históricas, solo
+// pierden la atribución.
+export const page_views = mysqlTable("page_views", {
+  id: char("id", { length: 36 }).primaryKey(),
+  path: varchar("path", { length: 500 }).notNull(),
+  user_id: char("user_id", { length: 36 }).references(() => usuarios.id, { onDelete: "set null" }),
+  created_at: datetime("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  pathIdx: index("page_views_path_idx").on(table.path),
+  createdAtIdx: index("page_views_created_at_idx").on(table.created_at),
+}))
 
 // ════════════════════════════════════════════════════════════════════
 // Tablas sin uso todavía en el código (posibles módulos futuros).

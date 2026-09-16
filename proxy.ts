@@ -6,6 +6,9 @@ const PUBLIC_PATHS = [
   "/auth/olvide-contrasena",
   "/api/auth/login",
   "/api/auth/olvide-contrasena",
+  // Tiene que poder registrar la visita a /auth/login de alguien sin
+  // sesión también (analíticas propias, ver lib/db/schema.ts).
+  "/api/analytics/pageview",
 ]
 
 export function proxy(request: NextRequest) {

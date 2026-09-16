@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { Menu, X, Play, ScrollText, Music, LogIn, LogOut, User, Users, ShieldCheck } from "lucide-react"
+import { Menu, X, Play, ScrollText, Music, LogIn, LogOut, User, Users, ShieldCheck, BarChart3 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { getCordaSrc } from "@/lib/constants/cordas"
 import { Button } from "@/components/ui/button"
@@ -148,6 +148,12 @@ export function Navigation() {
                               Gestionar Usuarios
                             </Link>
                           </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href="/admin/analytics" className="cursor-pointer">
+                              <BarChart3 className="w-4 h-4 mr-2" />
+                              Analíticas
+                            </Link>
+                          </DropdownMenuItem>
                         </>
                       )}
                       <DropdownMenuSeparator />
@@ -224,14 +230,24 @@ export function Navigation() {
                         Mi Perfil
                       </Link>
                       {user.role === "admin" && (
-                        <Link
-                          href="/admin/usuarios"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-foreground"
-                        >
-                          <ShieldCheck className="w-5 h-5" />
-                          Gestionar Usuarios
-                        </Link>
+                        <>
+                          <Link
+                            href="/admin/usuarios"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-foreground"
+                          >
+                            <ShieldCheck className="w-5 h-5" />
+                            Gestionar Usuarios
+                          </Link>
+                          <Link
+                            href="/admin/analytics"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-foreground"
+                          >
+                            <BarChart3 className="w-5 h-5" />
+                            Analíticas
+                          </Link>
+                        </>
                       )}
                       <button
                         onClick={() => {

@@ -62,10 +62,10 @@ pnpm db:migrate    # lo aplica; solo corre lo que falte (tabla __drizzle_migrati
 
 Este mismo `pnpm db:migrate` se corre tanto en local como en producción. También existe `pnpm db:studio` (GUI web de Drizzle Studio para inspeccionar datos).
 
-### Las 12 tablas
+### Las 13 tablas
 
 **En uso real por el código** (rutas API en `app/api/**` las consultan):
-`usuarios`, `cantorias`, `politica`, `rodas`, `songs`.
+`usuarios`, `cantorias`, `politica`, `rodas`, `songs`, `page_views`.
 
 **Con esquema listo pero sin backend/API todavía** (tablas creadas, sin rutas):
 `articles`, `movements`, `portuguese_lessons`, `portuguese_vocabulary`, `comments`, `favorites`, `user_lesson_progress`.
@@ -103,7 +103,8 @@ return NextResponse.json(data, { status: 201 })
 - Tabla `usuarios` (no `profiles`, no Supabase Auth). Roles: `admin` | `member`.
 - Sesión con `iron-session`, cookie `gaia-session`, definida en `lib/auth/session.ts`.
 - Todas las operaciones de usuario están en `lib/auth/db.ts` (login, crear, editar, borrar, reset de contraseña).
-- `proxy.ts` (en la raíz, convención actual de Next.js 16 — ver gotcha en "CI/CD y despliegue" sobre por qué no se llama `middleware.ts`) exige la cookie de sesión en **todas** las rutas excepto `/auth/login`, `/auth/olvide-contrasena`, `/api/auth/login`, `/api/auth/olvide-contrasena`. Si una ruta nueva necesita ser pública, hay que agregarla a `PUBLIC_PATHS` ahí. Todas las respuestas que pasan por acá llevan `Cache-Control: private, no-store` (necesario por el CDN de Hostinger, ver el mismo gotcha).
+- `proxy.ts` (en la raíz, convención actual de Next.js 16 — ver gotcha en "CI/CD y despliegue" sobre por qué no se llama `middleware.ts`) exige la cookie de sesión en **todas** las rutas excepto `/auth/login`, `/auth/olvide-contrasena`, `/api/auth/login`, `/api/auth/olvide-contrasena`, `/api/analytics/pageview`. Si una ruta nueva necesita ser pública, hay que agregarla a `PUBLIC_PATHS` ahí. Todas las respuestas que pasan por acá llevan `Cache-Control: private, no-store` (necesario por el CDN de Hostinger, ver el mismo gotcha).
+- **Rate limiting** en `/api/auth/login` (10 intentos / 15 min por IP) y `/api/auth/olvide-contrasena` (5 / 15 min — más estricto porque devuelve una contraseña nueva en texto plano en la respuesta). Implementado en `lib/rate-limit.ts`: un `Map` en memoria del propio proceso, sin Redis ni servicio externo — alcanza porque la Node.js App de Hostinger corre una sola instancia. Limitación conocida: se resetea en cada redeploy/reinicio de la instancia (ver los gotchas de deploy más abajo, pasa seguido). La IP se lee de `x-forwarded-for` (Hostinger sirve detrás de su propio proxy/CDN, no hay IP real en la conexión TCP directa).
 
 ## Storage de archivos
 
@@ -112,6 +113,23 @@ return NextResponse.json(data, { status: 201 })
 - `public/uploads/` está en `.gitignore` (son archivos de usuario, no código).
 - Confirmado que `public/uploads/` sobrevive a los auto-deploys (ver "CI/CD y despliegue" más abajo) — al estar en `.gitignore`, el pipeline de Git de Hostinger nunca la toca.
 - El componente `components/video-upload.tsx` que subía directo a Supabase Storage desde el browser **se eliminó** (no se usaba en ninguna página). Si se retoma esa función, tiene que subir el archivo a una ruta API del servidor (como hace `politica/upload`), no llamar a un storage client desde el cliente — ya no hay uno.
+
+## Analíticas propias
+
+Reemplaza a `@vercel/analytics` (eliminado en la migración) — no hay Docker/VPS en este hosting compartido para self-hostear algo como Umami o Plausible, así que es una solución mínima propia, sin servicio externo:
+
+- **Tabla `page_views`** (`lib/db/schema.ts`): `path`, `user_id` (nullable, `ON DELETE SET NULL` — no es "dato propio" del usuario como `comments`/`favorites`, es un registro agregado del sitio que sobrevive aunque se borre el usuario), `created_at`. Índices en `path` y `created_at` para las queries de agregación.
+- **`POST /api/analytics/pageview`**: pública (ver `PUBLIC_PATHS` arriba). `components/page-view-tracker.tsx` la llama desde `app/layout.tsx` (montado una vez, en cada cambio de `usePathname()`) vía `fetch(..., { keepalive: true })`, best-effort — si falla, no interrumpe la navegación.
+- **`GET /api/analytics/summary`** (solo admin): totales, páginas más visitadas, y visitas por día de los últimos 30 días. Página: `/admin/analytics` (link en el menú de admin de `components/navigation.tsx`), con un gráfico de barras usando `components/ui/chart.tsx` (shadcn) + recharts.
+
+### Gotcha real: `CURRENT_TIMESTAMP` de MySQL ≠ UTC, rompe el agrupado por día
+
+El MySQL local (XAMPP) corre con su `time_zone` de sesión varias horas atrás de UTC real, y **mysql2 no convierte** el valor al leerlo de vuelta — devuelve un `Date` con esas horas de menos pero etiquetado como si fuera UTC. Dos efectos, encontrados armando `GET /api/analytics/summary`:
+
+1. Agrupar del lado de MySQL con `DATE(created_at)` además tiene un segundo problema aparte del huso horario: **mysql2 devuelve ese `DATE(...)` como objeto `Date`, no como string** — un `Map` de JS indexado por ese valor nunca matchea contra las claves de fecha generadas en JS (`"2026-09-16"`), así que todos los días daban 0 visitas aunque hubiera datos reales.
+2. Aunque se agrupe del lado de JS, si `created_at` se dejó en el default `CURRENT_TIMESTAMP` de la columna, el timestamp que se lee de vuelta queda corrido esas mismas horas — una visita real de "hoy" podía terminar contada en el día de "ayer" en el gráfico.
+
+**Solución, las dos partes**: (1) el agrupado por día se hace enteramente en JS —se trae `created_at` crudo y se bucketea con `.toISOString().slice(0, 10)`, tanto para las filas reales como para la lista de referencia de los últimos N días, así ambos lados usan la misma función y quedan consistentes sin importar el huso horario del server de MySQL— y (2) `created_at` se setea explícito en la aplicación (`created_at: new Date()` en el insert de `pageview/route.ts`), no se deja en el default de la columna. Mismo patrón que ya usaba `updateUser` en `lib/auth/db.ts` para `updated_at`, por la misma razón. **Si se agrega en el futuro otra columna que se vaya a agrupar por fecha/día, aplicar el mismo patrón desde el principio.**
 
 ## Desarrollo local
 
@@ -263,6 +281,7 @@ El intento de deploy sí quedó registrado en hPanel con timestamp correcto (o s
 - `next.config.mjs` tiene `typescript: { ignoreBuildErrors: true }` (preexistente, no es cosa de esta migración) — `next build` no va a fallar por errores de tipos. Usa `npx tsc --noEmit` para chequear tipos de verdad.
 - El gestor de paquetes es pnpm — no uses `npm install` ni generes un `package-lock.json`.
 - Gotcha de assets: los PNG de `public/Cuerda x cuerda/` (íconos de graduación/corda, referenciados vía `getCordaSrc()` en `lib/constants/cordas.ts`) tienen mucho margen transparente alrededor del dibujo — medido con canvas + getImageData sobre varios archivos del set: el dibujo ocupa ~45.5% x ~47.5% del lienzo de 2160x2160, centrado horizontalmente (~50%) pero **no** verticalmente (centro real en ~40.4%, no 50% — bastante más espacio vacío abajo que arriba). Con `object-contain` a secas se ven mucho más chicos de lo esperado dentro de su caja, y descentrados hacia arriba. El componente `CordaAvatar` en `components/navigation.tsx` lo compensa con un contenedor `overflow-hidden` (que además define el tamaño real de la caja — el `<img>` de adentro no debe dictar el layout) + `style={{ transform: "translateY(9.6%) scale(1.8)" }}` en la imagen. **Importante el orden**: `translateY` va primero (se resuelve como % de la caja sin transformar y por eso NO se amplifica por el scale que le sigue) — si se invierte el orden (`scale(...) translateY(...)`), el translate queda multiplicado por el factor de escala y el resultado se descentra (ya pasó una vez). Si se reutiliza este patrón en otro lado (perfil, admin de usuarios), aplicar el mismo truco en vez de solo agrandar la caja, y si el contenedor (ej. un `Button` de shadcn) tiene una altura fija tipo `h-9`, agregar `h-auto` + padding — si no, el ícono agrandado se sale del fondo/hover del botón aunque el `overflow-hidden` interno esté recortando bien la imagen.
+- **`recharts` está en v3** (bumpeado desde v2, que ya no recibía actualizaciones). `components/ui/chart.tsx` (el wrapper de shadcn) necesitó ajustes de tipos por breaking changes reales de v3: `TooltipProps`/`LegendProps` en v2 traían `payload`/`label` como parte de las props del componente `<Tooltip>`/`<Legend>` mismos; en v3 esos campos se movieron a tipos aparte pensados para el render custom (`TooltipContentProps` importado de `recharts`, y `DefaultLegendContentProps` para el legend) — si se vuelve a tocar `chart.tsx` y tira errores de tipos sobre `payload`/`label`/`verticalAlign` "no existe en el tipo", es por esto, no una regresión. Antes de este cambio `recharts` estaba instalado pero sin usar en ningún lado (`chart.tsx` no se importaba de ninguna página) — el primer uso real es el gráfico de `/admin/analytics`.
 - **Ojo con clases de Tailwind `scale-*`/`translate-*` con valor arbitrario negativo** (ej. `-translate-y-[8%]`) en este setup (Tailwind 4 + Turbopack, Next 16): se detectó un caso donde la clase aparecía en el DOM pero el navegador nunca generaba el `transform` (quedaba `transform: none`, sin ningún error visible). No se investigó la causa raíz a fondo (¿JIT de Tailwind no matcheando el arbitrary value con signo negativo por fuera del bracket, algo de Turbopack?), pero el workaround que sí funcionó de forma confiable fue usar `style={{ transform: "..." }}` inline en vez de las clases de Tailwind. Si un `transform` de Tailwind no parece aplicarse, chequear `getComputedStyle(el).transform` en devtools antes de asumir que es un problema de layout — puede ser esto.
 
 ## Decisión: se descartó el cron automático

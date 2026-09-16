@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Bitter, Inter } from 'next/font/google'
+import { PageViewTracker } from '@/components/page-view-tracker'
 import './globals.css'
 
 const bitter = Bitter({ 
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${bitter.variable} ${inter.variable} bg-background`}>
       <body className="font-sans antialiased">
+        <PageViewTracker />
         {children}
       </body>
     </html>
