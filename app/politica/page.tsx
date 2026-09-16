@@ -310,13 +310,9 @@ export default function PoliticaPage() {
             return (
               <article
                 key={doc.id}
-                role={isClickable ? "button" : undefined}
-                tabIndex={isClickable ? 0 : undefined}
-                onClick={openFile}
-                onKeyDown={(e) => e.key === "Enter" && openFile()}
                 className={cn(
-                  "bg-card rounded-xl p-6 transition-colors",
-                  isClickable && "cursor-pointer hover:bg-secondary/40"
+                  "relative bg-card rounded-xl p-6 transition-colors",
+                  isClickable && "hover:bg-secondary/40"
                 )}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -340,7 +336,23 @@ export default function PoliticaPage() {
                       )}
 
                       <h3 className="font-serif text-lg font-bold text-card-foreground break-words">
-                        {doc.title}
+                        {isClickable ? (
+                          // "Stretched button": este es el único control real
+                          // de la tarjeta; after:inset-0 lo estira para cubrir
+                          // toda el article (que tiene position: relative), así
+                          // se puede seguir haciendo clic en cualquier parte de
+                          // la tarjeta sin que sea ella misma un botón (evita
+                          // anidar controles interactivos, ver auditoría a11y).
+                          <button
+                            type="button"
+                            onClick={openFile}
+                            className="text-left cursor-pointer after:absolute after:inset-0"
+                          >
+                            {doc.title}
+                          </button>
+                        ) : (
+                          doc.title
+                        )}
                       </h3>
 
                       {doc.content && (
@@ -370,32 +382,26 @@ export default function PoliticaPage() {
                     </div>
                   </div>
 
-                  {/* Actions — solo admin */}
+                  {/* Actions — solo admin. relative z-10 para quedar por
+                      encima del "stretched button" del título de arriba. */}
                   {isAdmin && (
-                    <div
-                      className="flex items-center gap-1 shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <span
-                        role="button"
-                        tabIndex={0}
+                    <div className="relative z-10 flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
                         onClick={() => openEdit(doc)}
-                        onKeyDown={(e) => e.key === "Enter" && openEdit(doc)}
                         className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
                         aria-label="Editar documento"
                       >
                         <Pencil className="w-4 h-4" />
-                      </span>
-                      <span
-                        role="button"
-                        tabIndex={0}
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleDelete(doc.id)}
-                        onKeyDown={(e) => e.key === "Enter" && handleDelete(doc.id)}
                         className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                         aria-label="Eliminar documento"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </span>
+                      </button>
                     </div>
                   )}
                 </div>

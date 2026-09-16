@@ -24,7 +24,10 @@ export function SubsectionCarousel({ children }: { children: React.ReactNode }) 
     <div className="relative my-6 print:contents">
       <div
         ref={scrollerRef}
-        className="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 print:contents"
+        role="region"
+        aria-label="Subsecciones, desplazamiento horizontal"
+        tabIndex={0}
+        className="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 print:contents focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
       >
         {children}
       </div>

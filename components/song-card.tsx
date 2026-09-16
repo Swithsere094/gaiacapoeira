@@ -59,85 +59,89 @@ export function SongCard({
   return (
     <>
       <article className="bg-card rounded-xl overflow-hidden">
-        {/* Header */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full p-6 flex items-center justify-between text-left hover:bg-secondary/30 transition-colors"
-        >
-          <div className="flex items-center gap-4 min-w-0">
-            {/* Play button — solo si hay video */}
-            {embedUrl && (
-              <div
-                className="w-12 h-12 shrink-0 rounded-full bg-primary/20 flex items-center justify-center cursor-pointer hover:bg-primary/30 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setShowVideo(true)
-                }}
-              >
-                <Play className="w-5 h-5 text-primary ml-0.5" />
-              </div>
-            )}
-            <div className="min-w-0">
-              <h3 className="font-serif text-xl font-bold text-card-foreground truncate">
-                {title}
-              </h3>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span
-                  className={cn(
-                    "inline-block px-2 py-0.5 rounded text-xs font-medium",
-                    typeColors[type] ?? "bg-secondary text-secondary-foreground"
-                  )}
+        {/* Header — el toggle de expandir y las acciones de editar/borrar
+            son botones hermanos, no anidados: un <button> real dentro de
+            otro (o de un span role="button") confunde a lectores de
+            pantalla y rompe el orden de foco (ver auditoría de a11y). */}
+        <div className="flex items-center hover:bg-secondary/30 transition-colors">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            aria-expanded={isExpanded}
+            className="flex-1 min-w-0 p-6 flex items-center justify-between text-left gap-3"
+          >
+            <div className="flex items-center gap-4 min-w-0">
+              {/* Play button — solo si hay video */}
+              {embedUrl && (
+                <div
+                  className="w-12 h-12 shrink-0 rounded-full bg-primary/20 flex items-center justify-center cursor-pointer hover:bg-primary/30 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowVideo(true)
+                  }}
                 >
-                  {typeLabels[type] ?? type}
-                </span>
-                {ritmos && ritmos.length > 0 && ritmos.map((r) => (
+                  <Play className="w-5 h-5 text-primary ml-0.5" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <h3 className="font-serif text-xl font-bold text-card-foreground truncate">
+                  {title}
+                </h3>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span
-                    key={r}
-                    className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground"
+                    className={cn(
+                      "inline-block px-2 py-0.5 rounded text-xs font-medium",
+                      typeColors[type] ?? "bg-secondary text-secondary-foreground"
+                    )}
                   >
-                    {r}
+                    {typeLabels[type] ?? type}
                   </span>
-                ))}
-                {mestre && (
-                  <span className="text-xs text-muted-foreground">{mestre}</span>
-                )}
+                  {ritmos && ritmos.length > 0 && ritmos.map((r) => (
+                    <span
+                      key={r}
+                      className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground"
+                    >
+                      {r}
+                    </span>
+                  ))}
+                  {mestre && (
+                    <span className="text-xs text-muted-foreground">{mestre}</span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2 shrink-0 ml-3">
-            {/* Edit / Delete — sin propagar al toggle */}
-            {onEdit && (
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={(e) => { e.stopPropagation(); onEdit() }}
-                onKeyDown={(e) => e.key === "Enter" && (e.stopPropagation(), onEdit())}
-                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                aria-label="Editar canción"
-              >
-                <Pencil className="w-4 h-4" />
-              </span>
-            )}
-            {onDelete && (
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={(e) => { e.stopPropagation(); onDelete() }}
-                onKeyDown={(e) => e.key === "Enter" && (e.stopPropagation(), onDelete())}
-                className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                aria-label="Eliminar canción"
-              >
-                <Trash2 className="w-4 h-4" />
-              </span>
-            )}
             {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-muted-foreground" />
+              <ChevronUp className="w-5 h-5 text-muted-foreground shrink-0" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-muted-foreground" />
+              <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" />
             )}
-          </div>
-        </button>
+          </button>
+
+          {(onEdit || onDelete) && (
+            <div className="flex items-center gap-2 shrink-0 pr-6">
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                  aria-label="Editar canción"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  aria-label="Eliminar canción"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Expanded Content */}
         {isExpanded && (
