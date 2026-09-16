@@ -65,7 +65,7 @@ export default function AdminAnalyticsPage() {
 
       <main className="pt-24 pb-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
+          <div className="pt-12 mb-12">
             <h1 className="font-serif text-3xl font-bold text-foreground flex items-center gap-3">
               <BarChart3 className="w-8 h-8 text-primary" />
               Analíticas
