@@ -142,6 +142,44 @@ Para pruebas de UI en browser (Playwright, capturas de pantalla, etc.) hay un us
 3. Conectar la página de frontend correspondiente (si ya existe como mock, como `app/movimientos/page.tsx`) reemplazando el array hardcodeado por un `fetch` a la API nueva.
 4. Si la tabla necesita una columna nueva que no se prevé todavía, es el flujo normal de migraciones (`pnpm db:generate` + `pnpm db:migrate`).
 
+## Testing automatizado
+
+Se agregó **Vitest** (no Jest — más liviano con ESM/TypeScript, sin configuración extra para Next 16). Hay dos configs separadas a propósito, porque tienen requisitos muy distintos:
+
+| | Config | Qué cubre | Necesita DB |
+|---|---|---|---|
+| `pnpm test` / `pnpm test:watch` | `vitest.config.mts` | Unit tests puros, co-ubicados junto al código (`lib/**/*.test.ts`) | No |
+| `pnpm test:integration` | `vitest.integration.config.mts` | Rutas API reales (`app/api/**`) | Sí (MySQL local / XAMPP) |
+
+### Regla obligatoria: correr los tests antes de cada commit
+
+**Esto no es opcional, ni algo para hacer "si hay tiempo".** Quien mantiene este repo día a día no programa — trabaja exclusivamente a través de Claude Code — así que la única red de seguridad real contra un commit roto es que el propio asistente corra los tests antes de comitear, siempre, sin que haga falta pedirlo cada vez.
+
+Antes de cualquier `git commit` en este repo:
+
+1. Correr `pnpm test` (unit tests) — siempre, sin excepción, incluso para un commit que a primera vista parece "solo docs" o "un cambio chico".
+2. Si el commit toca algo en `app/api/**`, `lib/db/**`, `lib/auth/**`, o los propios archivos de testing (`tests/`, `vitest*.config.mts`, `*.test.ts`), correr también `pnpm test:integration`. Necesita MySQL local corriendo (XAMPP, ver "Desarrollo local" más arriba) — si no está corriendo, arrancarlo primero, no saltear el paso.
+3. Si **cualquiera** de los dos falla: parar ahí. Mostrarle el error tal cual al usuario, explicar qué se rompió, y **no comitear** — ni un commit parcial, ni "total es solo un archivo el que falla". Corregir el problema (o preguntar si la causa no es obvia) y volver a correr los tests desde el paso 1 antes de reintentar.
+4. Recién si todo lo que aplica pasa en verde, comitear.
+
+### Unit tests (`lib/**/*.test.ts`)
+
+Sin mocks, sin DB — pensados para lógica pura. Ejemplos ya escritos: `lib/utils.test.ts`, `lib/utils/video-url.test.ts`, `lib/storage.test.ts` (escribe/borra archivos reales bajo `public/uploads/__vitest_test__/`, se limpia solo), `lib/constants/cordas.test.ts` (incluye una guarda de regresión que compara `CORDAS` contra los archivos reales en `public/Cuerda x cuerda/`, para no repetir el PNG huérfano que se sacó en la limpieza de restos de v0/Vercel).
+
+### Integration tests (`tests/integration/**/*.test.ts`)
+
+Llaman **directo a los route handlers exportados** de `app/api/**/route.ts` (ej. `import { POST } from "@/app/api/songs/route"`), no levantan un servidor real ni usan `fetch`. Dos piezas no obvias hacen esto posible:
+
+1. **Base de datos separada (`capoeira_test`)**: nunca corren contra la DB de desarrollo (`capoeira`), que tiene datos reales migrados + el usuario de QA de Playwright — sería fácil de corromper si los tests truncaran tablas ahí. `tests/global-setup.ts` crea `capoeira_test` (si no existe) y le aplica las migraciones de drizzle antes de correr la suite; cada archivo de test trunca las tablas que usa en un `beforeEach` (no pasa nada, es una DB descartable). `tests/env.ts` tiene el parser de `.env.local` (duplicado a propósito de `drizzle.config.ts` — drizzle-kit y vitest no cargan `.env.local` solos, a diferencia de Next) y la constante `TEST_DB_NAME`.
+2. **Mock de `next/headers`**: `cookies()` de Next solo funciona dentro del request context real del servidor — como acá se llama a los handlers directo, sin servidor, `tests/integration/setup.ts` mockea `next/headers` con un cookie jar en memoria (`vi.mock`). `getSession()` (iron-session real, con sellado/firmado real vía `AUTH_SECRET`) sigue funcionando igual, solo cambia el transporte de la cookie. `tests/integration/helpers.ts` expone `loginAs({ role: "admin" | "member", ... })` para sellar una sesión antes de llamar al handler — el usuario no necesita existir en la tabla `usuarios`, los route handlers solo miran `session.user`, nunca vuelven a consultar la DB para re-verificar el rol.
+
+Requiere MySQL local corriendo (XAMPP, ver "Desarrollo local" arriba) — si no está corriendo, `tests:integration` falla al conectar, no silenciosamente.
+
+### Qué falta (a propósito, fuera del alcance de esta primera etapa)
+
+- **No está wireado en el CI de GitHub** (`.github/workflows/ci.yml`) — decisión deliberada: correr `test:integration` en CI requeriría un servicio de MySQL efímero en el workflow, y todavía no se armó. Si se retoma, los unit tests (`pnpm test`) sí podrían agregarse a CI ya mismo sin ese problema (no tocan DB).
+- Solo hay integration tests para `auth/login`, `songs` y `rodas` — el patrón (`tests/integration/*.test.ts` + `loginAs()` + truncar tablas en `beforeEach`) está pensado para copiarse a `politica`, `cantorias`, `users`, etc. cuando se quiera ampliar cobertura.
+
 ## CI/CD y despliegue en Hostinger (✅ ya hecho — gaiacapoeira.com)
 
 **Push a `main` despliega solo.** La Node.js App de hPanel está conectada directo al repo de GitHub (`https://github.com/Swithsere094/gaiacapoeira`, rama `main`) con auto-deploy nativo — no hay workflow de GitHub Actions haciendo el deploy en sí.
