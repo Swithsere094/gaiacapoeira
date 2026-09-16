@@ -197,10 +197,10 @@ export default function CancionesPage() {
     >
       {/* Song Types Info */}
       <div className="bg-card rounded-xl p-6 mb-8">
-        <h3 className="font-serif font-bold text-foreground mb-4 flex items-center gap-2">
+        <h2 className="font-serif font-bold text-foreground mb-4 flex items-center gap-2">
           <Music className="w-5 h-5 text-primary" />
           Tipos de Canciones
-        </h3>
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
           <div>
             <span className="font-medium text-foreground">Ladainha:</span>

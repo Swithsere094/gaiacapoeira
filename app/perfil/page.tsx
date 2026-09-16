@@ -3,7 +3,7 @@
 import { useAuth } from "@/hooks/use-auth"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -161,14 +161,16 @@ export default function PerfilPage() {
                     </div>
                 }
               </div>
-              <CardTitle className="font-serif text-2xl text-foreground">
+              {/* CardTitle renderiza un <div>, no un heading real — esta
+                  página no tenía ningún <h1> (ver auditoría de a11y). */}
+              <h1 className="leading-none font-semibold font-serif text-2xl text-foreground">
                 {user.name}
                 {user.apodo && (
                   <span className="block text-lg text-muted-foreground font-normal italic mt-1">
                     «{user.apodo}»
                   </span>
                 )}
-              </CardTitle>
+              </h1>
               <div className="flex items-center justify-center gap-2 mt-2">
                 <Award className="w-4 h-4 text-primary" />
                 <span className="text-primary font-medium">
@@ -196,7 +198,7 @@ export default function PerfilPage() {
           {/* ── Elegir cuerda ── */}
           <Card className="border-border bg-card">
             <CardHeader className="border-b border-border pb-4">
-              <CardTitle className="font-serif text-lg text-foreground">Tu cuerda</CardTitle>
+              <h2 className="leading-none font-semibold font-serif text-lg text-foreground">Tu cuerda</h2>
               <p className="text-sm text-muted-foreground">Elige la cuerda que te identifica.</p>
             </CardHeader>
             <CardContent className="pt-6">
@@ -248,7 +250,7 @@ export default function PerfilPage() {
           {/* ── Editar apodo ── */}
           <Card className="border-border bg-card">
             <CardHeader className="border-b border-border pb-4">
-              <CardTitle className="font-serif text-lg text-foreground">Apodo</CardTitle>
+              <h2 className="leading-none font-semibold font-serif text-lg text-foreground">Apodo</h2>
               <p className="text-sm text-muted-foreground">
                 Tu nombre de capoeira aparecerá en tu perfil.
               </p>
@@ -288,7 +290,7 @@ export default function PerfilPage() {
           {/* ── Cambiar contraseña ── */}
           <Card className="border-border bg-card">
             <CardHeader className="border-b border-border pb-4">
-              <CardTitle className="font-serif text-lg text-foreground">Cambiar contraseña</CardTitle>
+              <h2 className="leading-none font-semibold font-serif text-lg text-foreground">Cambiar contraseña</h2>
               <p className="text-sm text-muted-foreground">
                 Necesitas tu contraseña actual para establecer una nueva.
               </p>

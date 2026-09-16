@@ -21,7 +21,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-serif font-bold text-foreground mb-4">Secciones</h4>
+            <h2 className="font-serif font-bold text-foreground mb-4">Secciones</h2>
             <ul className="space-y-2">
               <li><Link href="/galera" className="text-muted-foreground hover:text-primary transition-colors">Galera</Link></li>
               <li><Link href="/politica" className="text-muted-foreground hover:text-primary transition-colors">Política</Link></li>
@@ -30,7 +30,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-serif font-bold text-foreground mb-4">Comunidad</h4>
+            <h2 className="font-serif font-bold text-foreground mb-4">Comunidad</h2>
             <ul className="space-y-2">
               <li><span className="text-muted-foreground">Grupo de Capoeira</span></li>
               <li><span className="text-muted-foreground">Clases y Entrenamientos</span></li>

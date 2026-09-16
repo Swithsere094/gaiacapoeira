@@ -4,7 +4,7 @@ import { useState, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Lock, User } from "lucide-react"
@@ -42,15 +42,18 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <main className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
             <Lock className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle className="font-serif text-2xl text-foreground">
+          {/* CardTitle renderiza un <div>, no un heading real — esta página
+              no tiene ningún otro <h1>, así que acá se necesita uno de
+              verdad (ver auditoría de a11y: page-has-heading-one). */}
+          <h1 className="leading-none font-semibold font-serif text-2xl text-foreground">
             Areia no Mar
-          </CardTitle>
+          </h1>
           <CardDescription className="text-muted-foreground">
             Ingresa tus credenciales para acceder al repositorio
           </CardDescription>
@@ -123,7 +126,7 @@ function LoginForm() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </main>
   )
 }
 

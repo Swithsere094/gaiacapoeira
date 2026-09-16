@@ -61,9 +61,9 @@ export function MovementCard({
         {/* Content */}
         <div className="p-5">
           <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className="font-serif text-xl font-bold text-card-foreground">
+            <h2 className="font-serif text-xl font-bold text-card-foreground">
               {name}
-            </h3>
+            </h2>
             <span className={cn(
               "px-2 py-1 rounded text-xs font-medium shrink-0",
               difficultyColors[difficulty as keyof typeof difficultyColors]

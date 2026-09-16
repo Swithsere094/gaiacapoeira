@@ -9,7 +9,17 @@ import { Button } from "@/components/ui/button"
 // mediados de 2026, así que no es confiable como mecanismo de navegación).
 // print:contents "desenvuelve" el contenedor para que las tarjetas impriman
 // en flujo normal vertical en vez de quedar recortadas por el overflow-x.
-export function SubsectionCarousel({ children }: { children: React.ReactNode }) {
+export function SubsectionCarousel({
+  children,
+  label,
+}: {
+  children: React.ReactNode
+  // Identifica de qué sección son las subsecciones (ej. "Principios
+  // Fundamentales"). Varios carruseles conviven en la misma página del
+  // manual — sin esto, todos tendrían el mismo aria-label y axe los marca
+  // como landmarks indistinguibles (landmark-unique).
+  label: string
+}) {
   const scrollerRef = useRef<HTMLDivElement>(null)
 
   const scrollByCard = (direction: 1 | -1) => {
@@ -25,7 +35,7 @@ export function SubsectionCarousel({ children }: { children: React.ReactNode }) 
       <div
         ref={scrollerRef}
         role="region"
-        aria-label="Subsecciones, desplazamiento horizontal"
+        aria-label={`Subsecciones de ${label}, desplazamiento horizontal`}
         tabIndex={0}
         className="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 print:contents focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
       >

@@ -46,9 +46,9 @@ export function ArticleCard({
       </div>
 
       <Link href={`/articulos/${slug}`}>
-        <h3 className="font-serif text-xl font-bold text-card-foreground mb-3 group-hover:text-primary transition-colors line-clamp-2">
+        <h2 className="font-serif text-xl font-bold text-card-foreground mb-3 group-hover:text-primary transition-colors line-clamp-2">
           {title}
-        </h3>
+        </h2>
       </Link>
 
       <p className="text-muted-foreground text-sm mb-6 line-clamp-3">

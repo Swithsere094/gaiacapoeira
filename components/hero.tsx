@@ -92,9 +92,9 @@ export function Hero() {
                 <div className={`inline-flex p-3 rounded-xl ${section.color} mb-4`}>
                   <Icon className="w-6 h-6 text-primary-foreground" />
                 </div>
-                <h3 className="font-serif text-2xl font-bold text-card-foreground mb-2">
+                <h2 className="font-serif text-2xl font-bold text-card-foreground mb-2">
                   {section.title}
-                </h3>
+                </h2>
                 <p className="text-muted-foreground mb-4">{section.description}</p>
                 <span className="inline-flex items-center gap-1 text-primary font-medium group-hover:gap-2 transition-all">
                   Explorar

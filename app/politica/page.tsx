@@ -335,7 +335,7 @@ export default function PoliticaPage() {
                         </span>
                       )}
 
-                      <h3 className="font-serif text-lg font-bold text-card-foreground break-words">
+                      <h2 className="font-serif text-lg font-bold text-card-foreground break-words">
                         {isClickable ? (
                           // "Stretched button": este es el único control real
                           // de la tarjeta; after:inset-0 lo estira para cubrir
@@ -353,7 +353,7 @@ export default function PoliticaPage() {
                         ) : (
                           doc.title
                         )}
-                      </h3>
+                      </h2>
 
                       {doc.content && (
                         <p className="mt-1 text-sm text-muted-foreground leading-relaxed line-clamp-3">

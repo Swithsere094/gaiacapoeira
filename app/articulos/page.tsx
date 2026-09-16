@@ -97,7 +97,7 @@ export default function ArticulosPage() {
             <PenLine className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h3 className="font-serif font-bold text-foreground">¿Quieres compartir tu conocimiento?</h3>
+            <h2 className="font-serif font-bold text-foreground">¿Quieres compartir tu conocimiento?</h2>
             <p className="text-sm text-muted-foreground">Los miembros del grupo pueden enviar artículos para publicar.</p>
           </div>
         </div>

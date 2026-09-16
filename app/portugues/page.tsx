@@ -157,9 +157,9 @@ export default function PortuguesPage() {
                   {lesson.id}
                 </div>
                 <div>
-                  <h3 className="font-serif text-lg font-bold text-card-foreground">
+                  <h2 className="font-serif text-lg font-bold text-card-foreground">
                     {lesson.title}
-                  </h3>
+                  </h2>
                   <p className="text-sm text-muted-foreground">{lesson.description}</p>
                 </div>
               </div>
