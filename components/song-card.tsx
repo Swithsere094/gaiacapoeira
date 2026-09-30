@@ -1,9 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Play, ChevronDown, ChevronUp, BookOpen, History, X, Pencil, Trash2 } from "lucide-react"
+import { Play, BookOpen, History, Maximize2, Pencil, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toEmbedUrl } from "@/lib/utils/video-url"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export interface SongCardProps {
   id: string
@@ -18,6 +19,8 @@ export interface SongCardProps {
   onEdit?: () => void
   onDelete?: () => void
 }
+
+type Tab = "lyrics" | "translation" | "history"
 
 const typeLabels: Record<string, string> = {
   ladainha: "Ladainha",
@@ -38,6 +41,30 @@ const typeColors: Record<string, string> = {
   samba: "bg-chart-3/20 text-foreground",
 }
 
+function SongMeta({ type, ritmos, mestre }: { type: string; ritmos?: string[]; mestre?: string }) {
+  return (
+    <div className="flex items-center gap-2 mt-1 flex-wrap">
+      <span
+        className={cn(
+          "inline-block px-2 py-0.5 rounded text-xs font-medium",
+          typeColors[type] ?? "bg-secondary text-secondary-foreground"
+        )}
+      >
+        {typeLabels[type] ?? type}
+      </span>
+      {ritmos?.map((r) => (
+        <span
+          key={r}
+          className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground"
+        >
+          {r}
+        </span>
+      ))}
+      {mestre && <span className="text-xs text-muted-foreground">{mestre}</span>}
+    </div>
+  )
+}
+
 export function SongCard({
   title,
   type,
@@ -50,34 +77,42 @@ export function SongCard({
   onEdit,
   onDelete,
 }: SongCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [showVideo, setShowVideo] = useState(false)
-  const [activeTab, setActiveTab] = useState<"lyrics" | "translation" | "history">("lyrics")
+  const [isOpen, setIsOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<Tab>("lyrics")
 
   const embedUrl = videoUrl ? toEmbedUrl(videoUrl) : ""
+
+  const open = () => {
+    setActiveTab("lyrics")
+    setIsOpen(true)
+  }
+
+  const tabs: { id: Tab; label: string; icon: typeof BookOpen; show: boolean }[] = [
+    { id: "lyrics", label: "Letra", icon: BookOpen, show: true },
+    { id: "translation", label: "Traducción", icon: BookOpen, show: !!translation },
+    { id: "history", label: "Historia", icon: History, show: !!history },
+  ]
+  const visibleTabs = tabs.filter((t) => t.show)
 
   return (
     <>
       <article className="bg-card rounded-xl overflow-hidden">
-        {/* Header — el toggle de expandir y las acciones de editar/borrar
-            son botones hermanos, no anidados: un <button> real dentro de
-            otro (o de un span role="button") confunde a lectores de
-            pantalla y rompe el orden de foco (ver auditoría de a11y). */}
+        {/* Toda la tarjeta abre el modal. Editar/borrar son botones
+            hermanos, no anidados: un <button> dentro de otro confunde a
+            lectores de pantalla y rompe el orden de foco (ver auditoría de
+            a11y). El ícono de play es solo indicativo de que hay video. */}
         <div className="flex items-center hover:bg-secondary/30 transition-colors">
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            aria-expanded={isExpanded}
+            type="button"
+            onClick={open}
+            aria-haspopup="dialog"
             className="flex-1 min-w-0 p-6 flex items-center justify-between text-left gap-3"
           >
             <div className="flex items-center gap-4 min-w-0">
-              {/* Play button — solo si hay video */}
               {embedUrl && (
                 <div
-                  className="w-12 h-12 shrink-0 rounded-full bg-primary/20 flex items-center justify-center cursor-pointer hover:bg-primary/30 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowVideo(true)
-                  }}
+                  aria-hidden="true"
+                  className="w-12 h-12 shrink-0 rounded-full bg-primary/20 flex items-center justify-center"
                 >
                   <Play className="w-5 h-5 text-primary ml-0.5" />
                 </div>
@@ -85,36 +120,13 @@ export function SongCard({
               <div className="min-w-0">
                 <h3 className="font-serif text-xl font-bold text-card-foreground truncate">
                   {title}
+                  {embedUrl && <span className="sr-only"> (con video)</span>}
                 </h3>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span
-                    className={cn(
-                      "inline-block px-2 py-0.5 rounded text-xs font-medium",
-                      typeColors[type] ?? "bg-secondary text-secondary-foreground"
-                    )}
-                  >
-                    {typeLabels[type] ?? type}
-                  </span>
-                  {ritmos && ritmos.length > 0 && ritmos.map((r) => (
-                    <span
-                      key={r}
-                      className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground"
-                    >
-                      {r}
-                    </span>
-                  ))}
-                  {mestre && (
-                    <span className="text-xs text-muted-foreground">{mestre}</span>
-                  )}
-                </div>
+                <SongMeta type={type} ritmos={ritmos} mestre={mestre} />
               </div>
             </div>
 
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-muted-foreground shrink-0" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" />
-            )}
+            <Maximize2 aria-hidden="true" className="w-5 h-5 text-muted-foreground shrink-0" />
           </button>
 
           {(onEdit || onDelete) && (
@@ -142,117 +154,88 @@ export function SongCard({
             </div>
           )}
         </div>
+      </article>
 
-        {/* Expanded Content */}
-        {isExpanded && (
-          <div className="border-t border-border">
-            {/* Tabs */}
-            <div className="flex border-b border-border">
-              <button
-                onClick={() => setActiveTab("lyrics")}
-                className={cn(
-                  "flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2",
-                  activeTab === "lyrics"
-                    ? "text-primary border-b-2 border-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <BookOpen className="w-4 h-4" />
-                Letra
-              </button>
-              {translation && (
-                <button
-                  onClick={() => setActiveTab("translation")}
-                  className={cn(
-                    "flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2",
-                    activeTab === "translation"
-                      ? "text-primary border-b-2 border-primary"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Traducción
-                </button>
-              )}
-              {history && (
-                <button
-                  onClick={() => setActiveTab("history")}
-                  className={cn(
-                    "flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2",
-                    activeTab === "history"
-                      ? "text-primary border-b-2 border-primary"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <History className="w-4 h-4" />
-                  Historia
-                </button>
-              )}
-            </div>
+      {/* Modal: letra a la izquierda, video a la derecha, cada columna con
+          su propio scroll. En pantallas chicas el video queda fijo arriba y
+          la letra scrollea debajo. Radix desmonta el contenido al cerrar,
+          así que el iframe se destruye y el video deja de sonar. */}
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent
+          aria-describedby={undefined}
+          className={cn(
+            "flex flex-col gap-0 p-0 overflow-hidden h-[90vh]",
+            embedUrl ? "sm:max-w-6xl" : "sm:max-w-3xl"
+          )}
+        >
+          <DialogHeader className="shrink-0 text-left p-6 pr-12 border-b border-border">
+            <DialogTitle className="font-serif text-2xl font-bold">{title}</DialogTitle>
+            <SongMeta type={type} ritmos={ritmos} mestre={mestre} />
+          </DialogHeader>
 
-            {/* Tab Content */}
-            <div className="p-6">
-              {activeTab === "lyrics" && (
-                <div className="bg-secondary/30 rounded-lg p-4">
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
+            {embedUrl && (
+              <div className="shrink-0 lg:order-last lg:flex-1 lg:min-w-0 lg:overflow-y-auto p-4 lg:p-6 border-b lg:border-b-0 lg:border-l border-border">
+                <div className="aspect-video w-full bg-card rounded-lg overflow-hidden">
+                  <iframe
+                    src={embedUrl}
+                    className="w-full h-full"
+                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={`Video: ${title}`}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div
+              className={cn(
+                "flex-1 min-h-0 flex flex-col",
+                embedUrl && "lg:flex-none lg:w-[42%]"
+              )}
+            >
+              {visibleTabs.length > 1 && (
+                <div role="tablist" className="shrink-0 flex border-b border-border">
+                  {visibleTabs.map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeTab === id}
+                      onClick={() => setActiveTab(id)}
+                      className={cn(
+                        "flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2",
+                        activeTab === id
+                          ? "text-primary border-b-2 border-primary"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div role="tabpanel" className="flex-1 min-h-0 overflow-y-auto p-6">
+                {activeTab === "lyrics" && (
                   <pre className="font-sans text-foreground whitespace-pre-wrap leading-relaxed">
                     {lyrics}
                   </pre>
-                </div>
-              )}
-              {activeTab === "translation" && translation && (
-                <div className="bg-secondary/30 rounded-lg p-4">
+                )}
+                {activeTab === "translation" && (
                   <pre className="font-sans text-foreground whitespace-pre-wrap leading-relaxed">
                     {translation}
                   </pre>
-                </div>
-              )}
-              {activeTab === "history" && history && (
-                <div className="bg-secondary/30 rounded-lg p-4">
-                  <p className="text-foreground leading-relaxed">{history}</p>
-                </div>
-              )}
-
-              {embedUrl && (
-                <button
-                  onClick={() => setShowVideo(true)}
-                  className="mt-4 w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Play className="w-5 h-5" />
-                  Ver Video
-                </button>
-              )}
+                )}
+                {activeTab === "history" && (
+                  <p className="text-foreground leading-relaxed whitespace-pre-wrap">{history}</p>
+                )}
+              </div>
             </div>
           </div>
-        )}
-      </article>
-
-      {/* Video Modal */}
-      {showVideo && embedUrl && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/95"
-          onClick={() => setShowVideo(false)}
-        >
-          <div
-            className="relative w-full max-w-4xl aspect-video bg-card rounded-xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setShowVideo(false)}
-              className="absolute top-2 right-2 z-10 p-2 rounded-full bg-background/80 text-foreground hover:text-primary transition-colors"
-              aria-label="Cerrar video"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <iframe
-              src={embedUrl}
-              className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title={title}
-            />
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
