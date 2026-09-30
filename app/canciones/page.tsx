@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { SectionLayout } from "@/components/section-layout"
 import { SongCard } from "@/components/song-card"
-import { Music, Filter, Plus, Loader2, Search, X } from "lucide-react"
+import { Music, Filter, Plus, Loader2, Search, X, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
 import {
@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -34,6 +35,7 @@ interface Song {
   video_url: string | null
   mestre: string | null
   tags: string[] | null   // aquí guardamos los ritmos
+  nossa: boolean
   created_at: string
 }
 
@@ -69,6 +71,7 @@ const EMPTY_FORM = {
   video_url: "",
   mestre: "",
   ritmos: [] as string[],
+  nossa: false,
 }
 
 export default function CancionesPage() {
@@ -79,6 +82,7 @@ export default function CancionesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [selectedType, setSelectedType] = useState("all")
+  const [onlyNossas, setOnlyNossas] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
   // Dialog
@@ -125,6 +129,7 @@ export default function CancionesPage() {
       video_url: song.video_url ?? "",
       mestre: song.mestre ?? "",
       ritmos: song.tags ?? [],
+      nossa: song.nossa,
     })
     setFormError("")
     setDialogOpen(true)
@@ -187,7 +192,7 @@ export default function CancionesPage() {
     const matchesType = selectedType === "all" || s.type === selectedType
     const q = searchQuery.trim().toLowerCase()
     const matchesSearch = !q || s.title.toLowerCase().includes(q) || s.lyrics.toLowerCase().includes(q)
-    return matchesType && matchesSearch
+    return matchesType && matchesSearch && (!onlyNossas || s.nossa)
   })
 
   return (
@@ -251,6 +256,22 @@ export default function CancionesPage() {
       <div className="flex items-center gap-3 mb-8 flex-wrap">
         <Filter className="w-5 h-5 text-muted-foreground shrink-0" />
         <div className="flex gap-2 overflow-x-auto pb-1 flex-1">
+          {/* "Nossas" se combina con el tipo y la búsqueda — por eso es un
+              toggle aparte y no una opción más de songTypes. */}
+          <button
+            onClick={() => setOnlyNossas((v) => !v)}
+            aria-pressed={onlyNossas}
+            className={cn(
+              "px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 border",
+              onlyNossas
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card text-muted-foreground border-primary/40 hover:bg-secondary hover:text-foreground"
+            )}
+          >
+            <Star className={cn("w-3.5 h-3.5", onlyNossas ? "fill-current" : "text-primary")} />
+            Nossas
+          </button>
+          <div aria-hidden="true" className="w-px bg-border shrink-0 my-1" />
           {songTypes.map((t) => (
             <button
               key={t.id}
@@ -265,8 +286,8 @@ export default function CancionesPage() {
             </button>
           ))}
         </div>
-        {searchQuery && (
-          <span className="text-sm text-muted-foreground shrink-0">
+        {(searchQuery || onlyNossas) && (
+          <span className="text-sm text-muted-foreground shrink-0 w-full sm:w-auto">
             {filteredSongs.length} resultado{filteredSongs.length !== 1 ? "s" : ""}
           </span>
         )}
@@ -294,7 +315,7 @@ export default function CancionesPage() {
           <p className="text-muted-foreground text-lg">
             {songs.length === 0
               ? "Aún no hay canciones. ¡Agrega la primera!"
-              : "No hay canciones de este tipo."}
+              : "No hay canciones que coincidan con los filtros."}
           </p>
         </div>
       )}
@@ -314,6 +335,7 @@ export default function CancionesPage() {
               videoUrl={song.video_url ?? ""}
               mestre={song.mestre ?? ""}
               ritmos={song.tags ?? []}
+              nossa={song.nossa}
               onEdit={() => openEdit(song)}
               onDelete={isAdmin ? () => handleDelete(song.id) : undefined}
             />
@@ -410,6 +432,34 @@ export default function CancionesPage() {
                 placeholder="Ej: Mestre Pastinha"
               />
             </div>
+
+            {/* Nossa — al crear la marca cualquiera; al editar, solo admin
+                (la API ignora el cambio si no es admin, esto solo lo refleja). */}
+            {(() => {
+              const locked = !!editingSong && !isAdmin
+              return (
+                <div className="flex items-start gap-3 rounded-lg border border-border p-3">
+                  <Checkbox
+                    id="nossa"
+                    checked={form.nossa}
+                    onCheckedChange={(v) => setForm((f) => ({ ...f, nossa: v === true }))}
+                    disabled={saving || locked}
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="nossa" className="flex items-center gap-1.5">
+                      <Star className="w-3.5 h-3.5 text-primary" />
+                      Canción nossa
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {locked
+                        ? "Solo un admin puede cambiar esta marca en una canción ya creada."
+                        : "Del grupo o de algún integrante. Aparece en el filtro \"Nossas\"."}
+                    </p>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Letra */}
             <div className="space-y-2">

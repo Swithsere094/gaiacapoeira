@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { title, type, lyrics, translation, context, video_url, mestre, tags } = body
+  const { title, type, lyrics, translation, context, video_url, mestre, tags, nossa } = body
 
   if (!title || !type || !lyrics) {
     return NextResponse.json(
@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
       video_url: video_url || null,
       mestre: mestre || null,
       tags: tags && tags.length > 0 ? tags : null,
+      // Al crear, cualquier sesión puede marcarla como nossa.
+      nossa: nossa === true,
     })
 
     const [data] = await db.select().from(songs).where(eq(songs.id, id)).limit(1)

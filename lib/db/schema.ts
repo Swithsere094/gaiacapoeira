@@ -91,6 +91,9 @@ export const songs = mysqlTable("songs", {
   audio_url: text("audio_url"),
   mestre: varchar("mestre", { length: 255 }),
   tags: jsonArray("tags"),
+  // Canción propia del grupo o de un integrante (filtro "Nossas"). Cualquier
+  // sesión puede marcarla al crear; al editar, solo un admin puede cambiarla.
+  nossa: boolean("nossa").notNull().default(false),
   user_id: char("user_id", { length: 36 }).references(() => usuarios.id, { onDelete: "set null" }),
   created_at: datetime("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updated_at: datetime("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),

@@ -88,6 +88,46 @@ describe("PUT /api/songs/[id]", () => {
   })
 })
 
+describe("marca nossa", () => {
+  it("es false por defecto al crear", async () => {
+    await loginAs({ role: "member" })
+    const data = await createSong(req("POST", validSong)).then((r) => r.json())
+    expect(data.nossa).toBe(false)
+  })
+
+  it("un member puede marcarla al crear", async () => {
+    await loginAs({ role: "member" })
+    const data = await createSong(req("POST", { ...validSong, nossa: true })).then((r) => r.json())
+    expect(data.nossa).toBe(true)
+  })
+
+  it("un member no puede cambiarla al editar (se ignora, el resto sí se guarda)", async () => {
+    await loginAs({ role: "member" })
+    const created = await createSong(req("POST", { ...validSong, nossa: true })).then((r) => r.json())
+
+    const res = await updateSong(
+      req("PUT", { ...validSong, title: "Editada", nossa: false }),
+      params(created.id)
+    )
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    expect(data.title).toBe("Editada")
+    expect(data.nossa).toBe(true)
+  })
+
+  it("un admin sí puede cambiarla al editar", async () => {
+    await loginAs({ role: "member" })
+    const created = await createSong(req("POST", validSong)).then((r) => r.json())
+
+    await loginAs({ role: "admin" })
+    const data = await updateSong(
+      req("PUT", { ...validSong, nossa: true }),
+      params(created.id)
+    ).then((r) => r.json())
+    expect(data.nossa).toBe(true)
+  })
+})
+
 describe("DELETE /api/songs/[id]", () => {
   it("rechaza a un usuario sin rol admin", async () => {
     await loginAs({ role: "admin" })

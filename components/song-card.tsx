@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Play, BookOpen, History, Maximize2, Pencil, Trash2 } from "lucide-react"
+import { Play, BookOpen, History, Maximize2, Pencil, Trash2, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toEmbedUrl } from "@/lib/utils/video-url"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -16,6 +16,7 @@ export interface SongCardProps {
   videoUrl: string
   mestre?: string
   ritmos?: string[]
+  nossa?: boolean
   onEdit?: () => void
   onDelete?: () => void
 }
@@ -41,9 +42,25 @@ const typeColors: Record<string, string> = {
   samba: "bg-chart-3/20 text-foreground",
 }
 
-function SongMeta({ type, ritmos, mestre }: { type: string; ritmos?: string[]; mestre?: string }) {
+function SongMeta({
+  type,
+  ritmos,
+  mestre,
+  nossa,
+}: {
+  type: string
+  ritmos?: string[]
+  mestre?: string
+  nossa?: boolean
+}) {
   return (
     <div className="flex items-center gap-2 mt-1 flex-wrap">
+      {nossa && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-primary text-primary-foreground">
+          <Star aria-hidden="true" className="w-3 h-3 fill-current" />
+          Nossa
+        </span>
+      )}
       <span
         className={cn(
           "inline-block px-2 py-0.5 rounded text-xs font-medium",
@@ -74,6 +91,7 @@ export function SongCard({
   videoUrl,
   mestre,
   ritmos,
+  nossa,
   onEdit,
   onDelete,
 }: SongCardProps) {
@@ -122,7 +140,7 @@ export function SongCard({
                   {title}
                   {embedUrl && <span className="sr-only"> (con video)</span>}
                 </h3>
-                <SongMeta type={type} ritmos={ritmos} mestre={mestre} />
+                <SongMeta type={type} ritmos={ritmos} mestre={mestre} nossa={nossa} />
               </div>
             </div>
 
@@ -170,7 +188,7 @@ export function SongCard({
         >
           <DialogHeader className="shrink-0 text-left p-6 pr-12 border-b border-border">
             <DialogTitle className="font-serif text-2xl font-bold">{title}</DialogTitle>
-            <SongMeta type={type} ritmos={ritmos} mestre={mestre} />
+            <SongMeta type={type} ritmos={ritmos} mestre={mestre} nossa={nossa} />
           </DialogHeader>
 
           <div className="flex-1 min-h-0 flex flex-col lg:flex-row">

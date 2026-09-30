@@ -16,7 +16,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   const { id } = await params
   const body = await request.json()
-  const { title, type, lyrics, translation, context, video_url, mestre, tags } = body
+  const { title, type, lyrics, translation, context, video_url, mestre, tags, nossa } = body
 
   try {
     await db
@@ -30,6 +30,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
         video_url: video_url || null,
         mestre: mestre || null,
         tags: tags && tags.length > 0 ? tags : null,
+        // Al editar, solo un admin puede cambiar la marca "nossa"; si la
+        // manda un member se ignora y queda el valor que ya tenía.
+        ...(session.user.role === "admin" && typeof nossa === "boolean" ? { nossa } : {}),
         updated_at: new Date(),
       })
       .where(eq(songs.id, id))
