@@ -215,7 +215,7 @@ Se evaluaron dos caminos y **los dos primeros que se probaron fallaron por lími
 - Framework preset: Next.js · Node.js version: 22.x · Root directory: `./` · Package manager: pnpm · Output directory: `.next`
 - **Build command: `pnpm run build`**, sin tocar — el campo de hPanel es un dropdown cerrado que solo deja elegir entre los scripts que ya existen en `package.json` (no admite comandos encadenados a mano tipo `a && b`). Por eso el propio script `build` en `package.json` hace todo el trabajo:
   ```json
-  "build": "drizzle-kit migrate && next build"
+  "build": "drizzle-kit migrate && next build --webpack"
   ```
   Así las migraciones quedan automatizadas en cada deploy sin depender de un paso aparte (es idempotente, no rompe nada si no hay cambios de esquema). **Importante**: adentro de ese script hay que invocar `drizzle-kit` directo, no `pnpm run db:migrate` — un sub-shell del build no tiene el binario `pnpm` en su PATH (solo los binarios locales de `node_modules/.bin`), así que una invocación anidada de `pnpm` falla con "command not found".
 - Variables de entorno: las mismas 9 de siempre (ver `.env.example`), cargadas a mano en la Node.js App.
@@ -237,7 +237,7 @@ Se evaluaron dos caminos y **los dos primeros que se probaron fallaron por lími
 
 ### `.github/workflows/ci.yml`
 
-Un workflow de GitHub Actions separado (`build-check`) corre en cada push como red de seguridad — solo hace `pnpm install` + `pnpm exec next build` en el runner de GitHub, sin tocar el servidor ni la base de datos de producción (por eso usa `next build` directo y no el script `build` del proyecto, que incluye `drizzle-kit migrate` y necesitaría credenciales de DB que a propósito no viven en GitHub Secrets). Si este check falla, no impide el auto-deploy de hPanel — son dos cosas independientes, este es solo una alerta temprana de que algo no compila.
+Un workflow de GitHub Actions separado (`build-check`) corre en cada push como red de seguridad — solo hace `pnpm install` + `pnpm exec next build --webpack` en el runner de GitHub, sin tocar el servidor ni la base de datos de producción (por eso usa `next build` directo y no el script `build` del proyecto, que incluye `drizzle-kit migrate` y necesitaría credenciales de DB que a propósito no viven en GitHub Secrets). Si este check falla, no impide el auto-deploy de hPanel — son dos cosas independientes, este es solo una alerta temprana de que algo no compila.
 
 ### Gotcha real que se dio en el despliegue original (por zip): "Access denied" al hacer login
 
@@ -280,6 +280,21 @@ Un deploy falló sin dejar **absolutamente ningún log** — ni de tiempo de eje
 El intento de deploy sí quedó registrado en hPanel con timestamp correcto (o sea, el webhook de GitHub disparó bien) — el pipeline simplemente no llegó a producir ningún output en ningún lado. Correlación encontrada en el status page oficial de Hostinger (`statuspage.hostinger.com`): ese mismo día hubo un incidente de **"hPanel Accessibility Problems"** (carga excesiva en el backend del panel, causando problemas de acceso/carga continua), marcado como resuelto poco después. Es la explicación más plausible: el pipeline de deploy no llegó a inicializar el sistema de logging porque el backend de hPanel estaba bajo esa carga.
 
 **Solución que funcionó esta vez**: un simple **"Redesplegar"** alcanzó (a diferencia del incidente de `lsnode.js` de arriba, donde "Redesplegar" no resolvía nada dos veces seguidas) — consistente con que la causa era el incidente de hPanel, no un proceso zombie. Si vuelve a pasar un deploy sin ningún log: primero revisar `statuspage.hostinger.com` por incidentes activos antes de asumir que es el mismo patrón de proceso zombie de arriba (la solución es distinta: acá alcanza con reintentar, no hace falta pedir el reinicio completo a soporte).
+
+### Gotcha real (2026-09-29): Turbopack no puede crear procesos en el builder de Hostinger → build con `--webpack`
+
+El deploy de `5366578` falló dos veces seguidas en el paso `next build` (las migraciones sí se aplicaron antes), con:
+```
+FATAL: An unexpected Turbopack error occurred.
+Error [TurbopackInternalError]: creating new process
+Caused by: node process exited before we could connect to it with exit status: 0
+- Execution of evaluate_webpack_loader failed
+```
+Turbopack corre los loaders de webpack (acá: `@mdx-js/loader` del manual de convivencia, PostCSS/Tailwind) en **procesos Node hijos**, y en el builder de Hostinger ese proceso hijo muere sin output — probablemente un límite de procesos del hosting compartido. Terminar procesos + reinicio completo + "Redesplegar" **no** lo resolvió. El mismo commit compilaba limpio en local y en el CI de GitHub.
+
+**Solución**: el script `build` de `package.json` usa `next build --webpack` (y el CI también, para compilar igual que producción). Webpack corre los loaders dentro del mismo proceso. Verificado en local: mismas 31 rutas, páginas idénticas. `pnpm dev` sigue usando Turbopack (solo afecta el build de producción). **No volver a sacar `--webpack` del build** sin probar primero un deploy real en Hostinger.
+
+También ese día: un deploy falló antes con `ERROR: Failed to clone the repository` (repo público, GitHub sin incidentes) — se resolvió solo reintentando.
 
 ## Otras notas sueltas
 
