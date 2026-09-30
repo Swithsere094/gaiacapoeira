@@ -254,7 +254,7 @@ Conclusión: probablemente algún carácter especial de la contraseña original 
 
 ### Gotcha real y RECURRENTE (2026-09-14/15): "Redesplegar" no arranca, `Server is not running` en `lsnode.js`
 
-**Esto ya pasó dos veces seguidas, en dos deploys distintos** (uno con cambios de código, otro con un commit de solo documentación) — no es un incidente aislado, parece ser el comportamiento normal de esta Node.js App después de un push a `main`. Asumir que puede volver a pasar en cualquier deploy futuro y que el camino directo es el de la sección "Solución" de abajo, sin perder tiempo re-diagnosticando el código primero (ya se confirmó sano las dos veces, vía CI de GitHub + build/lockfile local).
+**Esto ya pasó al menos tres veces (2026-09-14, 09-15 y 09-29), en deploys distintos** (uno con cambios de código, otro con un commit de solo documentación) — no es un incidente aislado, parece ser el comportamiento normal de esta Node.js App después de un push a `main`. Asumir que puede volver a pasar en cualquier deploy futuro y que el camino directo es el de la sección "Solución" de abajo, sin perder tiempo re-diagnosticando el código primero (ya se confirmó sano las dos veces, vía CI de GitHub + build/lockfile local).
 
 Después de un deploy que sí compiló bien (confirmado con el workflow de CI de GitHub, independiente de Hostinger), la app no levantaba. El log de runtime mostraba:
 ```
@@ -264,7 +264,12 @@ at Server.close (node:net:2359:12)
 ```
 Esto pasa dentro de `/usr/local/lsws/fcgi-bin/lsnode.js` (el supervisor de procesos Node de LiteSpeed) — no es un error de la app, es el proceso Node anterior quedando en un estado zombie que el panel no logra limpiar solo con **"Redesplegar"** (se probó dos veces, no alcanzó). El asistente de IA de Hostinger, al preguntarle, volvió a insistir con el diagnóstico ya descartado de `@swc/helpers` (ver arriba) — resultó ser irrelevante de nuevo; no confiar en ese diagnóstico sin ver el log crudo primero.
 
-**Solución**: soporte humano de Hostinger (vía chat) tiene una opción para **reiniciar completamente la instancia y matar los procesos en ejecución**, que no está expuesta en el panel normal (no es lo mismo que "Redesplegar"). Pedirla explícitamente si un "Redesplegar" no resuelve un problema de arranque. **Como ya pasó dos veces, vale la pena preguntarle directamente a soporte por qué la instancia queda en este estado después de cada deploy** — puede haber una causa de fondo del lado de Hostinger que un simple reinicio manual no corrige de forma permanente.
+**Solución** — dos acciones, las dos **disponibles en hPanel sin pasar por soporte** (soporte dio las rutas el 2026-09-29, tercera vez que pasó; no son lo mismo que "Redesplegar"):
+
+1. **Reinicio completo de la instancia**: desde el **dashboard del sitio**, clic en la insignia de estado **"Running" / "En ejecución"** → reiniciar.
+2. **Terminar los procesos en ejecución**: hPanel → **plan de hosting → Uso de recursos** → terminar procesos.
+
+Usarlas si un "Redesplegar" no resuelve un problema de arranque. **Como ya pasó varias veces, vale la pena preguntarle directamente a soporte por qué la instancia queda en este estado después de cada deploy** — puede haber una causa de fondo del lado de Hostinger que un simple reinicio manual no corrige de forma permanente.
 
 **Efecto secundario importante**: ese reinicio completo **rompió los archivos ya subidos en `public/uploads/`** (los documentos de política dejaron de servirse) — a diferencia de un deploy normal por git, que sí los respeta (ver nota más arriba sobre por qué `public/uploads/` sobrevive a los deploys). Se solucionó volviendo a subir los archivos afectados a mano. Si se vuelve a pedir este reinicio completo en el futuro, avisar que puede hacer falta re-subir documentos de `/politica` después.
 
