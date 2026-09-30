@@ -294,6 +294,8 @@ Turbopack corre los loaders de webpack (acá: `@mdx-js/loader` del manual de con
 
 **Solución**: el script `build` de `package.json` usa `next build --webpack` (y el CI también, para compilar igual que producción). Webpack corre los loaders dentro del mismo proceso. Verificado en local: mismas 31 rutas, páginas idénticas. `pnpm dev` sigue usando Turbopack (solo afecta el build de producción). **No volver a sacar `--webpack` del build** sin probar primero un deploy real en Hostinger.
 
+Resultado real: con `--webpack` el primer intento **también falló**, pero tras terminar procesos + reinicio completo (rutas en el gotcha de `lsnode.js` más arriba) y reintentar, **compiló y quedó funcionando**. O sea, la limpieza de procesos sigue siendo necesaria además del flag. **Rutina recomendada cuando un deploy falla**: 1) terminar procesos (plan de hosting → Uso de recursos), 2) reinicio completo (insignia "En ejecución" del dashboard del sitio), 3) "Redesplegar".
+
 También ese día: un deploy falló antes con `ERROR: Failed to clone the repository` (repo público, GitHub sin incidentes) — se resolvió solo reintentando.
 
 ## Otras notas sueltas
