@@ -301,11 +301,24 @@ Después del build exitoso con `--webpack`, el sitio siguió caído: **todas las
 
 **Causa confirmada por soporte de Hostinger (ticket, octubre 2026)**: desde fines de septiembre de 2026 el hosting compartido **solo permite conexiones locales (127.0.0.1 / ::1) en sus propios puertos: 80, 443, 125, 3306, 11211 y 7777**. Todo otro puerto local TCP está bloqueado, incluido el 3000. Los sockets Unix y MySQL siguen funcionando. Soporte también confirmó que Turbopack usa loopback TCP en puertos aleatorios (de ahí el `creating new process` del build) — por eso **el `--webpack` del build es obligatorio**, no opcional. Recomiendan no bindear a la IP pública para esquivarlo, y VPS si se necesitan puertos TCP propios. El preset Next.js de hPanel sigue siendo el correcto.
 
-**Cómo LiteSpeed le pasa las peticiones a la app**: `lsnode.js` (el supervisor de LiteSpeed) hace `require()` del archivo de arranque **en su propio proceso** y reemplaza `http.Server.prototype.listen` para que la app escuche en el socket Unix de LiteSpeed, ignorando el puerto que pida ([rperper/lsnode](https://github.com/rperper/lsnode)).
+**Cómo LiteSpeed le pasa las peticiones a la app — confirmado con el `.htaccess` real** que Hostinger genera en `public_html` (hPanel → Administrador de archivos):
+```
+PassengerAppRoot /home/u762014524/domains/gaiacapoeira.com/hbuilds/current/nodejs
+PassengerAppType node
+PassengerNodejs /opt/alt/alt-nodejs22/root/bin/node
+PassengerStartupFile server.js
+PassengerBaseURI /
+PassengerRestartDir /home/u762014524/domains/gaiacapoeira.com/hbuilds/current/nodejs/tmp
+SetEnv NODE_OPTIONS "--require /home/u762014524/domains/gaiacapoeira.com/hbuilds/config/preload-timestamp.js"
+SetEnv LSNODE_CONSOLE_LOG console.log
+SetEnv TOKIO_WORKER_THREADS 2
+RewriteRule ^\.builds - [F,L]
+```
+O sea: **LiteSpeed arranca `server.js` directamente** (`PassengerStartupFile`) y **no usa nunca el script `start` de `package.json`** — ni `next start`, ni `-p ${PORT}` (por eso `PORT` nunca llegaba y el log decía 3000). No hay ningún puerto TCP en la cadena: `lsnode.js` hace `require()` del startup file **en su propio proceso** y reemplaza `http.Server.prototype.listen` para que la app escuche en el socket Unix de LiteSpeed, ignorando el puerto que pida ([rperper/lsnode](https://github.com/rperper/lsnode)). Mientras el repo no tenía `server.js`, Hostinger usaba uno propio generado para el preset Next.js — ese es el que arrancaba duplicado y dejó de funcionar con el bloqueo de puertos.
 
 **Solución**: `server.js` en la raíz arranca Next con su API programática (`next({ dev: false })` + un único `http.createServer().listen()`), y `"start": "node server.js"`. Cubre los dos mecanismos: bajo lsnode, el `listen()` se redirige solo al socket; si el entorno pasa una ruta de socket en `PORT`/`SOCKET_PATH`, escucha ahí (`next start -p` solo acepta números). Loguea la dirección **real** (`> Next.js listo en socket …` / `… en puerto …`): ese es el primer dato a mirar en el runtime log tras un deploy. Probado en local en los tres escenarios (puerto, ruta de socket, simulación de lsnode: el 3000 queda cerrado). Hipótesis (no confirmada) de por qué `next start` fallaba bajo lsnode: abre más de un servidor al arrancar (el "Ready" duplicado) y el cierre de uno rompe el socket.
 
-**Estado**: pendiente de confirmar en el primer deploy con `server.js` (si el log dice "listo en socket" y el sitio responde). Actualizar esta línea con el resultado real.
+**Estado**: pendiente de confirmar en el primer deploy con `server.js` (si el log dice "listo en socket" y el sitio responde). Incógnita a resolver en ese deploy: si Hostinger respeta el `server.js` del repo o lo pisa con el suyo — si en el runtime log no aparece ninguna línea "> Next.js listo en", lo pisó. Actualizar esta línea con el resultado real.
 
 ## Otras notas sueltas
 
