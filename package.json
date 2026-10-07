@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "drizzle-kit migrate && next build --webpack",
-    "start": "next start -p ${PORT:-3000}",
+    "start": "node server.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
